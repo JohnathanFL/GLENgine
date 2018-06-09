@@ -26,34 +26,23 @@ Geometry::Geometry(std::vector<VertexAttribute> attribs,
    refCounts[vao]++;
 }
 
-Geometry::Geometry(Geometry&& geom)
-    : drawType{geom.drawType},
-      attribs{geom.attribs},
-      offset{geom.offset},
-      numToDraw{geom.numToDraw},
-      vao{geom.vao},
-      vbuff{geom.vbuff},
-      ibuff{geom.ibuff} {
-   refCounts[vao]++;
-}
+// Since they both need the same stuff, let's make things easier to maintain.
+#define GEOMETRY_COPY_INIT                                                  \
+   attribs{geom.attribs}, drawType{geom.drawType}, offset{geom.offset},     \
+       numToDraw{geom.numToDraw}, vao{geom.vao}, vbuff{geom.vbuff}, ibuff { \
+      geom.ibuff                                                            \
+   }
 
-Geometry::Geometry(const Geometry& geom)
-    : drawType{geom.drawType},
-      attribs{geom.attribs},
-      offset{geom.offset},
-      numToDraw{geom.numToDraw},
-      vao{geom.vao},
-      vbuff{geom.vbuff},
-      ibuff{geom.ibuff} {
+Geometry::Geometry(Geometry&& geom) : GEOMETRY_COPY_INIT { refCounts[vao]++; }
+
+Geometry::Geometry(const Geometry& geom) : GEOMETRY_COPY_INIT {
    refCounts[vao]++;
 }
 
 Geometry::~Geometry() {
    auto& count = refCounts[vao];
-   if (--count < 1) {
+   if (--count < 1)
       glDeleteVertexArrays(1, &vao);
-      printf("Deleting VAO!\n");
-   }
 }
 
 GPUBuffer::GPUBuffer() {

@@ -27,30 +27,30 @@ std::string loadFile(const std::string& fileName) {
 }
 
 struct Vert {
-   template <typename... Args>
-   Vert(Args... args) {
-      pos = glm::vec3(args...);
-   }
-
-
    glm::vec3 pos;
+   glm::vec4 color;
 };
 
 void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
                    GLsizei length, const GLchar* message,
                    const void* userParam) {
-   printf("GL ERROR MESSAGE: %s\n\n", message);
+   Logger::Write("GL", message);
 }
 
 void printStats() {
-   printf("Version: %s\n", glGetString(GL_VERSION));
-   printf("Vender: %s\n", glGetString(GL_VENDOR));
-   printf("Renderer: %s\n", glGetString(GL_RENDERER));
-   printf("===========================================================\n\n");
+   Logger::Write(
+       "STATS",
+       "Version: " + std::string((const char*)glGetString(GL_VERSION)));
+   Logger::Write("STATS",
+                 "Vendor: " + std::string((const char*)glGetString(GL_VENDOR)));
+   Logger::Write(
+       "STATS",
+       "Renderer: " + std::string((const char*)glGetString(GL_RENDERER)));
 }
 
 int main() {
    try {
+      Logger::SetLogFile("mcpp.log");
       Renderer renderer{"mcpp", 1600, 900};
       printStats();
 
@@ -67,22 +67,29 @@ int main() {
       Shader frag(loadFile("triangle.frag"), Shader::Type::Fragment);
       Shader geom(loadFile("triangle.geom"), Shader::Type::Geometry);
 
-
-      printf("Vertex: %i, Fragment: %i\n", vert.id, frag.id);
-
       ShaderProgram prog(vert, frag);
 
-      VertexAttribute attrib = VertexAttribute()
-                                   .withIndex(0)
-                                   .withSize(3)
-                                   .withType(VertexAttribute::Type::Float)
-                                   .withNormalized(false)
-                                   .withStride(3 * sizeof(float))
-                                   .withInitialOffset(nullptr);
+      VertexAttribute posAttrib = VertexAttribute()
+                                      .withIndex(0)
+                                      .withSize(3)
+                                      .withType(VertexAttribute::Type::Float)
+                                      .withNormalized(false)
+                                      .withStride(7 * sizeof(float))
+                                      .withInitialOffset(nullptr);
+      VertexAttribute colorAttrib =
+          VertexAttribute()
+              .withIndex(1)
+              .withSize(4)
+              .withType(VertexAttribute::Type::Float)
+              .withNormalized(false)
+              .withStride(7 * sizeof(float))
+              .withInitialOffset((const void*)(3 * sizeof(float)));
 
 
       std::vector<Vert> verts = {
-          {-0.5f, -0.5f, 0.0f}, {0.5f, -0.5f, 0.0f}, {0.0f, 0.5f, 0.0f}};
+          {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+          {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+          {{0.0f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}};
       std::vector<unsigned> indicies = {0, 1, 2};
 
       GPUBuffer vbuff(GPUBuffer::Type::Vertex, GPUBuffer::Storage::StaticDraw);
@@ -91,7 +98,12 @@ int main() {
       GPUBuffer ibuff(GPUBuffer::Type::Index, GPUBuffer::Storage::StaticDraw);
       ibuff.upload(&indicies[0], vec_sizeof(indicies));
 
-      Geometry triangle{{attrib}, Geometry::DrawType::Triangles, 0, 3, vbuff,
+      // If no ibuff desired, simply pass {} in its place
+      Geometry triangle{{posAttrib, colorAttrib},
+                        Geometry::DrawType::Triangles,
+                        0,
+                        3,
+                        vbuff,
                         ibuff};
       renderer.addDrawable(triangle, prog);
 
@@ -99,8 +111,10 @@ int main() {
          renderer.updateRender();
          // TODO: Gamelogic
       }
-   } catch (std::runtime_error& e) {
+   } catch (const std::runtime_error& e) {
       cout << "ERROR: " << e.what() << endl << flush;
       // TODO: Forcible cleanup.
    }
+
+   return 0;
 }

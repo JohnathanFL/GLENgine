@@ -91,7 +91,7 @@ struct VertexAttribute {
 
 VertexAttribute::VertexAttribute() {
    initialOffset = nullptr;
-   index = size = normalized = stride = 0;
+   index = size = normalized = (stride = 0);
    type = Type::Invalid;  // Make sure the user sets this manually.
 }
 
@@ -111,7 +111,8 @@ struct GPUBuffer {
    enum class Type : GLenum;
    enum class Storage : GLenum;
 
-   // Only provided for things
+   // Only provided for things like optional that need a default constructor.
+   // Constructed buffer is NOT valid to use.
    GPUBuffer();
 
    GPUBuffer(GPUBuffer&& buf) {
@@ -133,10 +134,8 @@ struct GPUBuffer {
 
    ~GPUBuffer() {
       auto& count = refCounts[id];
-      if (--count < 1) {
-         printf("Deleting GPUBuffer!\n");
+      if (--count < 1)
          glDeleteBuffers(1, &id);
-      }
    }
 
    // Example: buff.upload(&vertVector[0], vec_sizeof(vertVector));
@@ -173,9 +172,7 @@ void GPUBuffer::upload(const void* data, size_t size) {
    glBufferData((GLenum)type, size, data, (GLenum)storage);
 }
 
-void GPUBuffer::bind() const {
-   glBindBuffer((GLenum)type, id);
-}
+void GPUBuffer::bind() const { glBindBuffer((GLenum)type, id); }
 
 //==============================================================================
 //========================  Geometry  ==========================================

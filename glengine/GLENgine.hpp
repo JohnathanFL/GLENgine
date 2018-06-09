@@ -1,4 +1,5 @@
 #pragma once
+#include <fstream>
 #include <functional>
 #include <map>
 #include <string>
@@ -14,3 +15,5 @@
 #include "Renderer.hpp"
 
 #include "Input.hpp"
+
+#include "Logger.hpp"

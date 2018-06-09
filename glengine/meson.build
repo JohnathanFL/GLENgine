@@ -1,5 +1,5 @@
 glengineLib = static_library('glengine',
-    ['Geometry.cpp', 'Input.cpp', 'Renderer.cpp', 'Shader.cpp'],
+    ['Geometry.cpp', 'Input.cpp', 'Renderer.cpp', 'Shader.cpp', 'Logger.cpp'],
     dependencies: [sdl2, GL, dl, glad],
     )
 

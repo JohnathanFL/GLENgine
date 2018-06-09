@@ -1,6 +1,6 @@
 #pragma once
-#include <typeindex>
 #include <functional>
+#include <typeindex>
 
 #include <SDL2/SDL.h>
 
@@ -8,50 +8,19 @@
 
 struct InputEventData : public CustomEventData {
   public:
-   InputEventData() {
-   }
+   InputEventData() {}
 
-   InputEventData(const SDL_KeyboardEvent& ev) {
-      key = ev.keysym.sym;
-   }
-   virtual ~InputEventData() {
-   }
+   InputEventData(const SDL_KeyboardEvent& ev) { key = ev.keysym.sym; }
+   virtual ~InputEventData();
 
    SDL_Keycode key;
 };
 
 class Input {
   public:
-   Input(SDL_Window* window) {
-      this->window = window;
-   }
+   Input(SDL_Window* window) { this->window = window; }
 
-   bool handleEvents() {
-      SDL_Event e;
-      while (SDL_PollEvent(&e)) {
-         switch (e.type) {
-            case SDL_QUIT:
-               this->callAll(Event::Quit, InputEventData{});
-               return false;
-               break;
-
-            case SDL_KEYDOWN:
-               this->callAll(Event::Keydown, InputEventData{e.key});
-               break;
-
-
-            case SDL_KEYUP:
-               this->callAll(Event::Keyup, InputEventData{e.key});
-               break;
-
-            default:
-               break;
-         }
-      }
-
-
-      return true;
-   }
+   bool handleEvents();
 
 
    enum class Event : uint8_t {
@@ -63,16 +32,10 @@ class Input {
    };
 
    inline void addEvent(uint32_t adder, const Event& forWhat,
-                        std::function<void(const EventData&)> handler) {
-      registered[(uint8_t)forWhat][adder] = handler;
-   }
+                        std::function<void(const EventData&)> handler);
 
   private:
-   void callAll(const Event& ev, const InputEventData& data) {
-      EventData event = {std::type_index(typeid(Input)), data};
-      for (auto& funcPair : registered[(uint8_t)ev])
-         funcPair.second(event);
-   }
+   inline void callAll(const Event& ev, const InputEventData& data);
 
 
    SDL_Window* window;
@@ -81,3 +44,14 @@ class Input {
        (uint8_t)Event::COUNT>
        registered;
 };
+
+void Input::addEvent(uint32_t adder, const Input::Event& forWhat,
+                     std::function<void(const EventData&)> handler) {
+   registered[(uint8_t)forWhat][adder] = handler;
+}
+
+void Input::callAll(const Input::Event& ev, const InputEventData& data) {
+   EventData event = {std::type_index(typeid(Input)), data};
+   for (auto& funcPair : registered[(uint8_t)ev])
+      funcPair.second(event);
+}

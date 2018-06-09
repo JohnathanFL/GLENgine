@@ -1,0 +1,9 @@
+[GL]@255: Shader Stats: SGPRS: 16 VGPRS: 8 Code Size: 56 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@255: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 36 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@256: Shader Stats: SGPRS: 16 VGPRS: 20 Code Size: 36 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@256: Shader Stats: SGPRS: 24 VGPRS: 12 Code Size: 248 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@256: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@256: Shader Stats: SGPRS: 16 VGPRS: 4 Code Size: 84 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@260: LLVM diagnostic (remark): <unknown>:0:0: 2 instructions in function
+[GL]@265: LLVM diagnostic (remark): <unknown>:0:0: 2 instructions in function
+[GL]@265: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
