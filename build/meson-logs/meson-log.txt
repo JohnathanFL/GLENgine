@@ -1,0 +1,61 @@
+Build started at 2018-06-08T23:01:51.248290
+Main binary: /usr/bin/python
+Python system: Linux
+The Meson build system
+Version: 0.46.1
+Source dir: /home/oakenbow/Dev/Projects/mcpp
+Build dir: /home/oakenbow/Dev/Projects/mcpp/build
+Build type: native build
+Project name: mcpp
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ /home/oakenbow/Dev/Projects/mcpp/build/meson-private/sanitycheckcpp.cc -o /home/oakenbow/Dev/Projects/mcpp/build/meson-private/sanitycheckcpp.exe
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/oakenbow/Dev/Projects/mcpp/build/meson-private/sanitycheckcpp.exe
+Native C++ compiler: c++ (gcc 8.1.1 "c++ (GCC) 8.1.1 20180531")
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Found pkg-config: /usr/bin/pkg-config (1.4.2)
+Determining dependency 'sdl2' with pkg-config executable '/usr/bin/pkg-config'
+Native dependency sdl2 found: YES 2.0.8
+Determining dependency 'gl' with pkg-config executable '/usr/bin/pkg-config'
+Native dependency gl found: YES 18.1.1
+Running compile:
+Working directory:  /tmp/tmpsjbwhqid
+Command line:  c++ /tmp/tmpsjbwhqid/testfile.cpp -pipe -D_FILE_OFFSET_BITS=64 -o /tmp/tmpsjbwhqid/output.exe -O0 -fpermissive -Wl,--start-group -ldl -Wl,--end-group 
+
+Code:
+ int main(int argc, char **argv) { return 0; }
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Library dl found: YES
+Determining dependency 'glad' with pkg-config executable '/usr/bin/pkg-config'
+
+
+Executing subproject glad.
+
+Project name: glad
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc /home/oakenbow/Dev/Projects/mcpp/build/meson-private/sanitycheckc.c -o /home/oakenbow/Dev/Projects/mcpp/build/meson-private/sanitycheckc.exe
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/oakenbow/Dev/Projects/mcpp/build/meson-private/sanitycheckc.exe
+Native C compiler: cc (gcc 8.1.1 "cc (GCC) 8.1.1 20180531")
+Build targets in project: 1
+
+Subproject glad finished.
+Dependency glad from subproject subprojects/glad found: YES
+Build targets in project: 3
+Found ninja-1.8.2 at /usr/bin/ninja
