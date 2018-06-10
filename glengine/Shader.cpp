@@ -51,7 +51,7 @@ using namespace glm;
    template <>                                                     \
    void ShaderProgram::setVecUniform<CLASS>(GLint        location, \
                                             const CLASS& uni) {    \
-      glUniform##POSTFIX(location, 1, &uni[0]);                    \
+      glProgramUniform##POSTFIX(id, location, 1, &uni[0]);         \
    }
 
 #define SET_ALL_VEC_UNIFORM_FUNC(CLASS, GLM_PREFIX, GL_PREFIX) \
@@ -68,7 +68,8 @@ SET_ALL_VEC_UNIFORM_FUNC(vec, u, ui);
    template <>                                                                \
    void ShaderProgram::setMatUniform<CLASS>(GLint location, const CLASS& uni, \
                                             bool transpose) {                 \
-      glUniformMatrix##SIZE##fv(location, 1, transpose, &uni[0][0]);          \
+      glProgramUniformMatrix##SIZE##fv(id, location, 1, transpose,            \
+                                       &uni[0][0]);                           \
    }
 
 #define SET_BOTH_MAT_UNIFORM_FUNC(CLASS, X, Y)   \
