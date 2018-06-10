@@ -80,6 +80,7 @@ void Renderer::updateRender() {
       // printf("Prog id: %i, VAO: %i\n", drawable.prog.id, drawable.geom.vao);
 
       drawable.prog.use();
+      drawable.prog.setVecUniform(0, glm::vec3{-0.5f, -0.1f, 0.0f});
       drawable.geom.draw();
    }
 

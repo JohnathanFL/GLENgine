@@ -43,10 +43,10 @@ struct ShaderProgram {
 
    // This must be specialized elsewhere.
    template <typename T>
-   void setVecUniform(GLint location, const T& uni);
+   void setVecUniform(GLint location, const T& uni) const;
 
    template <typename T>
-   void setMatUniform(GLint location, const T& uni, bool transpose);
+   void setMatUniform(GLint location, const T& uni, bool transpose) const;
 
 
    GLuint                       id;
@@ -76,7 +76,12 @@ inline void ShaderProgram::addShaders(const Args&... shaders) {
 }
 
 
-void ShaderProgram::use() const { glUseProgram(id); }
+void ShaderProgram::use() const {
+   if (GLState::Current().program != id) {
+      glUseProgram(id);
+      GLState::Current().program = id;
+   }
+}
 void ShaderProgram::dispatchCompute(const glm::uvec3& groupSize) {
    glDispatchCompute(groupSize.x, groupSize.y, groupSize.z);
 }

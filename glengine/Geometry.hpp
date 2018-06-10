@@ -5,6 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
+
+#include "Logger.hpp"
+
 #include "GLWrapper.hpp"
 
 //==============================================================================
@@ -263,7 +266,10 @@ struct Geometry {
 };
 
 void Geometry::draw() const {
-   glBindVertexArray(vao);
+   if (GLState::Current().vao != vao) {
+      glBindVertexArray(vao);
+      GLState::Current().vao = vao;
+   }
 
    if (ibuff.has_value())
       glDrawElements((GLenum)drawType, numToDraw, GL_UNSIGNED_INT, 0);

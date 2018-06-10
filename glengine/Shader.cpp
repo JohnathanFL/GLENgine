@@ -47,11 +47,11 @@ using namespace glm;
 // Forgive me father, for I have sinned...mightily
 // Before you say anything, just look at how this makes things for the user...
 // (prog.setVecUniform(loc, glm::vecx{}) vs prog.setVecxUniform and so on)
-#define SET_VEC_UNIFORM_FUNC(CLASS, POSTFIX)                       \
-   template <>                                                     \
-   void ShaderProgram::setVecUniform<CLASS>(GLint        location, \
-                                            const CLASS& uni) {    \
-      glProgramUniform##POSTFIX(id, location, 1, &uni[0]);         \
+#define SET_VEC_UNIFORM_FUNC(CLASS, POSTFIX)                                  \
+   template <>                                                                \
+   void ShaderProgram::setVecUniform<CLASS>(GLint location, const CLASS& uni) \
+       const {                                                                \
+      glProgramUniform##POSTFIX(id, location, 1, &uni[0]);                    \
    }
 
 #define SET_ALL_VEC_UNIFORM_FUNC(CLASS, GLM_PREFIX, GL_PREFIX) \
@@ -67,7 +67,7 @@ SET_ALL_VEC_UNIFORM_FUNC(vec, u, ui);
 #define SET_MAT_UNIFORM_FUNC(CLASS, SIZE)                                     \
    template <>                                                                \
    void ShaderProgram::setMatUniform<CLASS>(GLint location, const CLASS& uni, \
-                                            bool transpose) {                 \
+                                            bool transpose) const {           \
       glProgramUniformMatrix##SIZE##fv(id, location, 1, transpose,            \
                                        &uni[0][0]);                           \
    }
