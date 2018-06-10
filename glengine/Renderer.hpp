@@ -32,6 +32,16 @@ class Renderer {
       glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
    }
 
+   struct GlobalUniforms {
+      float     time;
+      glm::mat4 projection;
+      glm::mat4 view;
+   };
+
+   GPUBuffer       globalUBO;
+   GlobalUniforms  globalUniforms = {0.0f, glm::mat4(0.0f), glm::mat4(0.0f)};
+   GlobalUniforms* gpuGlobalUniforms;
+
   private:
    struct Drawable {
       bool          skip;

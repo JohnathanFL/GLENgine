@@ -8,6 +8,7 @@
 
 #include <glm/glm.hpp>
 
+
 struct Shader {
    enum class Type : GLenum;
 
@@ -46,6 +47,7 @@ struct ShaderProgram {
 
    template <typename T>
    void setMatUniform(GLint location, const T& uni, bool transpose);
+
 
    GLuint                       id;
    std::shared_ptr<std::string> name;

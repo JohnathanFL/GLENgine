@@ -1,11 +1,11 @@
-[STATS]@0.211000s: Version: 4.5 (Core Profile) Mesa 18.1.1
-[STATS]@0.211000s: Vendor: X.Org
-[STATS]@0.211000s: Renderer: AMD Radeon(TM) HD 8800 Series (PITCAIRN, DRM 3.23.0, 4.16.13-2-ARCH, LLVM 6.0.0)
-[GL]@0.223000s: Shader Stats: SGPRS: 16 VGPRS: 8 Code Size: 128 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.223000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 64 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.224000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.224000s: Shader Stats: SGPRS: 16 VGPRS: 4 Code Size: 84 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.228000s: LLVM diagnostic (remark): <unknown>:0:0: 2 instructions in function
-[GL]@0.234000s: LLVM diagnostic (remark): <unknown>:0:0: 3 instructions in function
-[GL]@0.235000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[UNCAUGHT EXCEPTION]@3.259000s: Testing stuff
+[Info]@0.223000s: Wrote to global uniforms!
+[STATS]@0.223000s: Version: 4.5 (Core Profile) Mesa 18.1.1
+[STATS]@0.223000s: Vendor: X.Org
+[STATS]@0.223000s: Renderer: AMD Radeon(TM) HD 8800 Series (PITCAIRN, DRM 3.23.0, 4.16.13-2-ARCH, LLVM 6.0.0)
+[GL]@0.229000s: Shader Stats: SGPRS: 16 VGPRS: 8 Code Size: 80 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.229000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 64 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.230000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.230000s: Shader Stats: SGPRS: 16 VGPRS: 4 Code Size: 84 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.236000s: LLVM diagnostic (remark): <unknown>:0:0: 2 instructions in function
+[GL]@0.241000s: LLVM diagnostic (remark): <unknown>:0:0: 3 instructions in function
+[GL]@0.242000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0

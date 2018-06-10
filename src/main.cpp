@@ -31,12 +31,6 @@ struct Vert {
    glm::vec4 color;
 };
 
-void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                   GLsizei length, const GLchar* message,
-                   const void* userParam) {
-   Logger::Write("GL", message);
-}
-
 void printStats() {
    Logger::Write(
        "STATS",
@@ -70,8 +64,6 @@ int main() {
          // printf("I said %s before I died!", tester.c_str());
       });
 
-      glEnable(GL_DEBUG_OUTPUT);
-      glDebugMessageCallback(debugCallback, nullptr);
 
       Shader vert(loadFile("triangle.vert"), Shader::Type::Vertex);
       Shader frag(loadFile("triangle.frag"), Shader::Type::Fragment);
@@ -79,7 +71,7 @@ int main() {
 
       ShaderProgram prog(vert, frag);
       prog.use();
-      prog.setVecUniform(0, glm::vec3{0.3f, 0.5f, 0.0f});
+      // prog.setVecUniform(0, glm::vec3{0.3f, 0.5f, 0.0f});
 
       std::vector<VertexAttribute> attribs = {
           {VertexAttribute()

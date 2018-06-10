@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <iostream>
 #include <optional>
 #include <unordered_map>
@@ -110,6 +111,7 @@ void VertexAttribute::bind() {
 struct GPUBuffer {
    enum class Type : GLenum;
    enum class Storage : GLenum;
+   enum class MapAccess : GLenum;
 
    // Only provided for things like optional that need a default constructor.
    // Constructed buffer is NOT valid to use.
@@ -130,6 +132,18 @@ struct GPUBuffer {
       refCounts[id]++;
    }
 
+   GPUBuffer& operator=(const GPUBuffer& rhs) {
+      this->~GPUBuffer();
+
+      this->id      = rhs.id;
+      this->type    = rhs.type;
+      this->storage = rhs.storage;
+
+      refCounts[id]++;
+
+      return *this;
+   }
+
    GPUBuffer(Type type, Storage storage);
 
    ~GPUBuffer() {
@@ -143,6 +157,17 @@ struct GPUBuffer {
 
    // Likely rarely used, as the VAO stores this.
    inline void bind() const;
+
+   inline void bufferStorage(size_t size, const void* data, GLbitfield flags) {
+      glBindBuffer((GLenum)type, id);
+      glBufferStorage((GLenum)type, size, data, flags);
+   }
+
+   template <typename T>
+   inline T* mapRange(size_t offset, size_t length, GLbitfield access) {
+      bind();
+      return (T*)glMapBufferRange((GLenum)type, offset, length, access);
+   }
 
    // What kind of data are we storing?
    enum class Type : GLenum {
@@ -158,7 +183,23 @@ struct GPUBuffer {
       StaticDraw  = GL_STATIC_DRAW,
       DynamicDraw = GL_DYNAMIC_DRAW,
       StreamDraw  = GL_STREAM_DRAW,
+
+      StaticRead  = GL_STATIC_READ,
+      DynamicRead = GL_DYNAMIC_READ,
+      StreamRead  = GL_STREAM_READ,
+
+      StaticCopy  = GL_STATIC_COPY,
+      DynamicCopy = GL_DYNAMIC_COPY,
+      StreamCopy  = GL_STREAM_COPY,
+
    } storage;
+
+   // for glMapBuffer
+   enum class MapAccess : GLenum {
+      Read      = GL_READ_ONLY,
+      Write     = GL_WRITE_ONLY,
+      ReadWrite = GL_READ_WRITE
+   };
 
    GLuint id;
 

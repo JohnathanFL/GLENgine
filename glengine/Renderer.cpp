@@ -1,5 +1,11 @@
 #include "Renderer.hpp"
 
+void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                   GLsizei length, const GLchar* message,
+                   const void* userParam) {
+   Logger::Write("GL", message);
+}
+
 Renderer::Renderer(std::__cxx11::string title, int w, int h) {
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) <
        0) {
@@ -42,6 +48,24 @@ Renderer::Renderer(std::__cxx11::string title, int w, int h) {
    SDL_GL_MakeCurrent(window, glCtx);
 
    gladLoadGL();
+   glEnable(GL_DEBUG_OUTPUT);
+   glDebugMessageCallback(debugCallback, nullptr);
+
+
+   globalUBO =
+       GPUBuffer{GPUBuffer::Type::Uniform, GPUBuffer::Storage::StreamCopy};
+   globalUBO.bufferStorage(sizeof(GlobalUniforms), nullptr,
+                           GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT |
+                               GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+   gpuGlobalUniforms = globalUBO.mapRange<GlobalUniforms>(
+       0, sizeof(GlobalUniforms),
+       GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT);
+
+   if (gpuGlobalUniforms) {
+      memcpy(gpuGlobalUniforms, &globalUniforms, sizeof(GlobalUniforms));
+      Logger::Write("Info", "Wrote to global uniforms!");
+   }
 
    setClearColor({1.0f, 1.0f, 1.0f, 1.0f});
 }
