@@ -81,21 +81,21 @@ int main() {
       prog.use();
       prog.setVecUniform(0, glm::vec3{0.3f, 0.5f, 0.0f});
 
-      VertexAttribute posAttrib = VertexAttribute()
-                                      .withIndex(0)
-                                      .withSize(3)
-                                      .withType(VertexAttribute::Type::Float)
-                                      .withNormalized(false)
-                                      .withStride(7 * sizeof(float))
-                                      .withInitialOffset(nullptr);
-      VertexAttribute colorAttrib =
-          VertexAttribute()
-              .withIndex(1)
-              .withSize(4)
-              .withType(VertexAttribute::Type::Float)
-              .withNormalized(false)
-              .withStride(7 * sizeof(float))
-              .withInitialOffset((const void*)(3 * sizeof(float)));
+      std::vector<VertexAttribute> attribs = {
+          {VertexAttribute()
+               .withIndex(0)
+               .withSize(3)
+               .withType(VertexAttribute::Type::Float)
+               .withNormalized(false)
+               .withStride(7 * sizeof(float))
+               .withInitialOffset(nullptr)},
+          {VertexAttribute()
+               .withIndex(1)
+               .withSize(4)
+               .withType(VertexAttribute::Type::Float)
+               .withNormalized(false)
+               .withStride(7 * sizeof(float))
+               .withInitialOffset((const void*)(3 * sizeof(float)))}};
 
 
       std::vector<Vert> verts = {
@@ -111,11 +111,7 @@ int main() {
       ibuff.upload(&indicies[0], vec_sizeof(indicies));
 
       // If no ibuff desired, simply pass {} in its place
-      Geometry triangle{{posAttrib, colorAttrib},
-                        Geometry::DrawType::Triangles,
-                        0,
-                        3,
-                        vbuff,
+      Geometry triangle{attribs, Geometry::DrawType::Triangles, 0, 3, vbuff,
                         ibuff};
       // TODO: Should renderer be a full scene graph, or should that be
       // something else?
@@ -126,7 +122,7 @@ int main() {
          // TODO: Gamelogic
       }
    } catch (const std::runtime_error& e) {
-      cout << "ERROR: " << e.what() << endl << flush;
+      Logger::Write("UNCAUGHT EXCEPTION", e.what());
       // TODO: Forcible cleanup.
    }
 

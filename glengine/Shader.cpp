@@ -45,6 +45,8 @@ void ShaderProgram::compile() {
 using namespace glm;
 
 // Forgive me father, for I have sinned...mightily
+// Before you say anything, just look at how this makes things for the user...
+// (prog.setVecUniform(loc, glm::vecx{}) vs prog.setVecxUniform and so on)
 #define SET_VEC_UNIFORM_FUNC(CLASS, POSTFIX)                       \
    template <>                                                     \
    void ShaderProgram::setVecUniform<CLASS>(GLint        location, \
