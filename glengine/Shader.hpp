@@ -38,7 +38,7 @@ struct ShaderProgram {
 
    void compile();
 
-   inline void use() const;
+   inline bool use() const;
    inline void dispatchCompute(const glm::uvec3& groupSize);
 
    // This must be specialized elsewhere.
@@ -76,11 +76,13 @@ inline void ShaderProgram::addShaders(const Args&... shaders) {
 }
 
 
-void ShaderProgram::use() const {
+bool ShaderProgram::use() const {
    if (GLState::Current().program != id) {
       glUseProgram(id);
       GLState::Current().program = id;
-   }
+      return true;
+   } else
+      return false;
 }
 void ShaderProgram::dispatchCompute(const glm::uvec3& groupSize) {
    glDispatchCompute(groupSize.x, groupSize.y, groupSize.z);

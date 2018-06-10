@@ -6,7 +6,7 @@ void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
    Logger::Write("GL", message);
 }
 
-Renderer::Renderer(std::__cxx11::string title, int w, int h) {
+Renderer::Renderer(const std::string& title, int w, int h) {
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) <
        0) {
       Logger::Write("Renderer::Renderer",
@@ -64,7 +64,6 @@ Renderer::Renderer(std::__cxx11::string title, int w, int h) {
 
    if (gpuGlobalUniforms) {
       memcpy(gpuGlobalUniforms, &globalUniforms, sizeof(GlobalUniforms));
-      Logger::Write("Info", "Wrote to global uniforms!");
    }
 
    setClearColor({1.0f, 1.0f, 1.0f, 1.0f});
@@ -79,8 +78,11 @@ void Renderer::updateRender() {
       // printf("Attempting to draw!");
       // printf("Prog id: %i, VAO: %i\n", drawable.prog.id, drawable.geom.vao);
 
-      drawable.prog.use();
-      drawable.prog.setVecUniform(0, glm::vec3{-0.5f, -0.1f, 0.0f});
+      // use returns true if any state changes were made.
+      if (drawable.prog.use()) {
+         // If there were state changes, we probably need to rebind things
+         drawable.prog.setVecUniform(0, glm::vec3{-0.5f, -0.1f, 0.0f});
+      }
       drawable.geom.draw();
    }
 

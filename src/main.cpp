@@ -70,8 +70,6 @@ int main() {
       Shader geom(loadFile("triangle.geom"), Shader::Type::Geometry);
 
       ShaderProgram prog(vert, frag);
-      prog.use();
-      // prog.setVecUniform(0, glm::vec3{0.3f, 0.5f, 0.0f});
 
       std::vector<VertexAttribute> attribs = {
           {VertexAttribute()

@@ -15,7 +15,7 @@
 
 class Renderer {
   public:
-   Renderer(std::string title, int w, int h);
+   Renderer(const std::string& title, int w, int h);
    ~Renderer() {}
 
    inline void addDrawable(const Geometry& geom, const ShaderProgram& prog) {
