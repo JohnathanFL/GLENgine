@@ -48,15 +48,25 @@ void printStats() {
        "Renderer: " + std::string((const char*)glGetString(GL_RENDERER)));
 }
 
+struct App {
+   App(const string& title, glm::ivec2 windowSize)
+       : renderer{title, windowSize.x, windowSize.y},
+         input{renderer.getWindow()} {}
+   Renderer renderer;
+   Input    input;
+};
+
 int main() {
    try {
       Logger::SetLogFile("mcpp.log");
-      Renderer renderer{"mcpp", 1600, 900};
+      App app{"mcpp", {1600, 900}};
       printStats();
 
-      Input       input{renderer.getWindow()};
+      app.renderer.setClearColor({44 / 255.0f, 53 / 255.0f, 57 / 255.0f, 1.0f});
+
+
       std::string tester = "Hello, world!";
-      input.addEvent(0, Input::Event::Quit, [&](const EventData& e) {
+      app.input.addEvent(0, Input::Event::Quit, [&](const EventData& e) {
          // printf("I said %s before I died!", tester.c_str());
       });
 
@@ -68,6 +78,8 @@ int main() {
       Shader geom(loadFile("triangle.geom"), Shader::Type::Geometry);
 
       ShaderProgram prog(vert, frag);
+      prog.use();
+      prog.setVecUniform(0, glm::vec3{0.3f, 0.5f, 0.0f});
 
       VertexAttribute posAttrib = VertexAttribute()
                                       .withIndex(0)
@@ -105,10 +117,12 @@ int main() {
                         3,
                         vbuff,
                         ibuff};
-      renderer.addDrawable(triangle, prog);
+      // TODO: Should renderer be a full scene graph, or should that be
+      // something else?
+      app.renderer.addDrawable(triangle, prog);
 
-      while (input.handleEvents()) {
-         renderer.updateRender();
+      while (app.input.handleEvents()) {
+         app.renderer.updateRender();
          // TODO: Gamelogic
       }
    } catch (const std::runtime_error& e) {

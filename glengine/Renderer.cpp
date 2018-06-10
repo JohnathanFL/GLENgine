@@ -3,7 +3,9 @@
 Renderer::Renderer(std::__cxx11::string title, int w, int h) {
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) <
        0) {
-      printf("Failed to init SDL2, exiting...\n");
+      Logger::Write("Renderer::Renderer",
+                    "Failed to init SDL2 (error: ", SDL_GetError(),
+                    ") exiting");
       exit(1);
    }
    atexit(SDL_Quit);
@@ -21,23 +23,35 @@ Renderer::Renderer(std::__cxx11::string title, int w, int h) {
    window = SDL_CreateWindow(
        title.c_str(), 0, 0, w, h,
        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+
+   if (!window) {
+      Logger::Write("Renderer::Renderer",
+                    "Failed to create window (error: ", SDL_GetError(),
+                    "), exiting!");
+      exit(2);
+   }
+
    glCtx = SDL_GL_CreateContext(window);
    if (!glCtx) {
-      printf("Failed to create an SDL_GLContext! Exiting...\n");
-      exit(2);
+      Logger::Write("Renderer::Renderer",
+                    "Failed to create a GL context (error: ", SDL_GetError(),
+                    "), exiting!");
+      exit(3);
    }
 
    SDL_GL_MakeCurrent(window, glCtx);
 
    gladLoadGL();
+
+   setClearColor({1.0f, 1.0f, 1.0f, 1.0f});
 }
 
 void Renderer::updateRender() {
    glViewport(0, 0, 1600, 900);
-   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
    for (const auto& drawable : drawables) {
+      // Debug stuff
       // printf("Attempting to draw!");
       // printf("Prog id: %i, VAO: %i\n", drawable.prog.id, drawable.geom.vao);
 

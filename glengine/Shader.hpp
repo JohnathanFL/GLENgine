@@ -4,6 +4,7 @@
 #include <string>
 
 #include "GLWrapper.hpp"
+#include "Logger.hpp"
 
 #include <glm/glm.hpp>
 
@@ -28,12 +29,6 @@ struct Shader {
 };
 
 struct ShaderProgram {
-   GLuint                       id;
-   std::shared_ptr<std::string> name;
-
-   bool                         valid;
-   std::shared_ptr<std::string> infoLog = nullptr;
-
    template <typename... Args>
    inline ShaderProgram(const Args&... shaders);
 
@@ -44,6 +39,19 @@ struct ShaderProgram {
 
    inline void use() const;
    inline void dispatchCompute(const glm::uvec3& groupSize);
+
+   // This must be specialized elsewhere.
+   template <typename T>
+   void setVecUniform(GLint location, const T& uni);
+
+   template <typename T>
+   void setMatUniform(GLint location, const T& uni, bool transpose);
+
+   GLuint                       id;
+   std::shared_ptr<std::string> name;
+
+   bool                         valid;
+   std::shared_ptr<std::string> infoLog = nullptr;
 };
 
 
@@ -60,7 +68,8 @@ inline void ShaderProgram::addShaders(const Args&... shaders) {
       if (shader) {
          glAttachShader(id, shader.id);
       } else
-         printf("Shader %i was not valid!\n", shader.id);
+         Logger::Write("ShaderProgram::addShaders",
+                       "Invalid shader passed to program ", id, "!");
    }
 }
 

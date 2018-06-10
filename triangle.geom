@@ -1,6 +1,8 @@
-#version 330 core
+#version 430 core
 layout (points) in;
 layout (triangle_strip, max_vertices = 5) out;
+
+varying vec4 vertColor;
 
 void main() {
     vec4 position = gl_in[0].gl_Position;

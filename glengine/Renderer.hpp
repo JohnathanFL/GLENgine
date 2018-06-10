@@ -16,8 +16,7 @@
 class Renderer {
   public:
    Renderer(std::string title, int w, int h);
-   ~Renderer() {
-   }
+   ~Renderer() {}
 
    inline void addDrawable(const Geometry& geom, const ShaderProgram& prog) {
       drawables.push_back({false, geom, prog});
@@ -25,8 +24,12 @@ class Renderer {
    void updateRender();
 
 
-   SDL_Window* getWindow() {
-      return window;
+   SDL_Window* getWindow() { return window; }
+
+   const glm::vec4& getClearColor() const { return clearColor; }
+   void             setClearColor(const glm::vec4& col) {
+      clearColor = col;
+      glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
    }
 
   private:
@@ -39,4 +42,6 @@ class Renderer {
    std::vector<Drawable> drawables;  // TODO: Sorting based on state changes.
    SDL_GLContext         glCtx;
    SDL_Window*           window;
+
+   glm::vec4 clearColor;
 };

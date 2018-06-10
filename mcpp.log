@@ -1,12 +1,10 @@
-[STATS]@0.216000s: Version: 4.5 (Core Profile) Mesa 18.1.1
-[STATS]@0.216000s: Vendor: X.Org
-[STATS]@0.216000s: Renderer: AMD Radeon(TM) HD 8800 Series (PITCAIRN, DRM 3.23.0, 4.16.13-2-ARCH, LLVM 6.0.0)
-[GL]@0.223000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 64 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.223000s: Shader Stats: SGPRS: 16 VGPRS: 8 Code Size: 80 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.224000s: Shader Stats: SGPRS: 16 VGPRS: 20 Code Size: 36 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.224000s: Shader Stats: SGPRS: 24 VGPRS: 12 Code Size: 248 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.224000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.224000s: Shader Stats: SGPRS: 16 VGPRS: 4 Code Size: 84 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
-[GL]@0.228000s: LLVM diagnostic (remark): <unknown>:0:0: 2 instructions in function
-[GL]@0.233000s: LLVM diagnostic (remark): <unknown>:0:0: 3 instructions in function
-[GL]@0.234000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[STATS]@0.206000s: Version: 4.5 (Core Profile) Mesa 18.1.1
+[STATS]@0.206000s: Vendor: X.Org
+[STATS]@0.206000s: Renderer: AMD Radeon(TM) HD 8800 Series (PITCAIRN, DRM 3.23.0, 4.16.13-2-ARCH, LLVM 6.0.0)
+[GL]@0.219000s: Shader Stats: SGPRS: 16 VGPRS: 8 Code Size: 128 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.220000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 64 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.220000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.221000s: Shader Stats: SGPRS: 16 VGPRS: 4 Code Size: 84 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0
+[GL]@0.231000s: LLVM diagnostic (remark): <unknown>:0:0: 2 instructions in function
+[GL]@0.237000s: LLVM diagnostic (remark): <unknown>:0:0: 3 instructions in function
+[GL]@0.238000s: Shader Stats: SGPRS: 16 VGPRS: 16 Code Size: 40 LDS: 0 Scratch: 0 Max Waves: 10 Spilled SGPRs: 0 Spilled VGPRs: 0 PrivMem VGPRs: 0

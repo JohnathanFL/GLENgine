@@ -19,7 +19,7 @@ Shader::Shader(const std::string& source, Shader::Type type) {
 
       glGetShaderInfoLog(id, 1, nullptr, &infoLog->at(0));
 
-      printf("%s\n", infoLog->c_str());
+      Logger::Write("Shader::Shader", "Failed to compile shader: ", *infoLog);
    }
 }
 
@@ -37,6 +37,48 @@ void ShaderProgram::compile() {
 
 
       glGetProgramInfoLog(id, size, nullptr, &(*infoLog)[0]);
-      printf("Failed to link program: %s", infoLog->c_str());
+      Logger::Write("ShaderProgram::compile",
+                    "Failed to link program: ", *infoLog);
    }
 }
+
+using namespace glm;
+
+// Forgive me father, for I have sinned...mightily
+#define SET_VEC_UNIFORM_FUNC(CLASS, POSTFIX)                       \
+   template <>                                                     \
+   void ShaderProgram::setVecUniform<CLASS>(GLint        location, \
+                                            const CLASS& uni) {    \
+      glUniform##POSTFIX(location, 1, &uni[0]);                    \
+   }
+
+#define SET_ALL_VEC_UNIFORM_FUNC(CLASS, GLM_PREFIX, GL_PREFIX) \
+   SET_VEC_UNIFORM_FUNC(GLM_PREFIX##CLASS##1, 1##GL_PREFIX##v) \
+   SET_VEC_UNIFORM_FUNC(GLM_PREFIX##CLASS##2, 2##GL_PREFIX##v) \
+   SET_VEC_UNIFORM_FUNC(GLM_PREFIX##CLASS##3, 3##GL_PREFIX##v) \
+   SET_VEC_UNIFORM_FUNC(GLM_PREFIX##CLASS##4, 4##GL_PREFIX##v)
+
+SET_ALL_VEC_UNIFORM_FUNC(vec, f, f);
+SET_ALL_VEC_UNIFORM_FUNC(vec, i, i);
+SET_ALL_VEC_UNIFORM_FUNC(vec, u, ui);
+
+#define SET_MAT_UNIFORM_FUNC(CLASS, SIZE)                                     \
+   template <>                                                                \
+   void ShaderProgram::setMatUniform<CLASS>(GLint location, const CLASS& uni, \
+                                            bool transpose) {                 \
+      glUniformMatrix##SIZE##fv(location, 1, transpose, &uni[0][0]);          \
+   }
+
+#define SET_BOTH_MAT_UNIFORM_FUNC(CLASS, X, Y)   \
+   SET_MAT_UNIFORM_FUNC(CLASS##X##x##Y, X##x##Y) \
+   SET_MAT_UNIFORM_FUNC(CLASS##Y##x##X, Y##x##X)
+
+#define SET_ALL_MAT_UNIFORM_FUNC(CLASS)   \
+   SET_BOTH_MAT_UNIFORM_FUNC(CLASS, 2, 4) \
+   SET_BOTH_MAT_UNIFORM_FUNC(CLASS, 2, 3) \
+   SET_BOTH_MAT_UNIFORM_FUNC(CLASS, 3, 4) \
+   SET_MAT_UNIFORM_FUNC(CLASS##4, 4)      \
+   SET_MAT_UNIFORM_FUNC(CLASS##3, 3)      \
+   SET_MAT_UNIFORM_FUNC(CLASS##2, 2)
+
+SET_ALL_MAT_UNIFORM_FUNC(mat);
