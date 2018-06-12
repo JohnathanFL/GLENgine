@@ -1,90 +1,91 @@
 #include "Renderer.hpp"
 
-void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                   GLsizei length, const GLchar* message,
-                   const void* userParam) {
-   Logger::Write("GL", message);
-}
+Renderer::Renderer(const std::__cxx11::string& windowTitle, glm::ivec2 windowDims) {
+   if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+      Logger::ErrorOut("Failed to init SDL: ", SDL_GetError());
 
-Renderer::Renderer(const std::string& title, int w, int h) {
-   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) <
-       0) {
-      Logger::Write("Renderer::Renderer",
-                    "Failed to init SDL2 (error: ", SDL_GetError(),
-                    ") exiting");
-      exit(1);
-   }
-   atexit(SDL_Quit);
+   window =
+       SDL_CreateWindow(windowTitle.c_str(), 0, 0, windowDims.x, windowDims.y, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN);
+   if (!window)
+      Logger::ErrorOut("Failed to create a window: ", SDL_GetError());
 
-   SDL_GL_LoadLibrary(nullptr);
-   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-   SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, SDL_TRUE);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                       SDL_GL_CONTEXT_PROFILE_CORE);
+   // TODO: Decompose the blocks into their own functions. They should already be seperable, but keeping them this way
+   // for now for faster dev.
 
+   {  // Get the instance
+      auto appInfo = vk::ApplicationInfo()
+                         .setApplicationVersion(1)
+                         .setEngineVersion(1)
+                         .setPEngineName("GLENgine")
+                         .setApiVersion(VK_API_VERSION_1_1);
 
-   window = SDL_CreateWindow(
-       title.c_str(), 0, 0, w, h,
-       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+      uint32_t count = 0;
+      SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr);
+      std::vector<const char*> extensions(count);
+      SDL_Vulkan_GetInstanceExtensions(window, &count, &extensions[0]);
 
-   if (!window) {
-      Logger::Write("Renderer::Renderer",
-                    "Failed to create window (error: ", SDL_GetError(),
-                    "), exiting!");
-      exit(2);
+      auto createInfo = vk::InstanceCreateInfo()
+                            .setPApplicationInfo(&appInfo)
+                            .setEnabledExtensionCount(count)
+                            .setPpEnabledExtensionNames(&extensions[0]);
+
+      if (!(vulkInstance = vk::createInstance(createInfo)))
+         Logger::ErrorOut("Failed to create Vulkan instance!");
    }
 
-   glCtx = SDL_GL_CreateContext(window);
-   if (!glCtx) {
-      Logger::Write("Renderer::Renderer",
-                    "Failed to create a GL context (error: ", SDL_GetError(),
-                    "), exiting!");
-      exit(3);
+   {  // Get the surface
+      VkSurfaceKHR surface;
+      if (!SDL_Vulkan_CreateSurface(window, vulkInstance, &surface))
+         Logger::ErrorOut("Failed to create vulkan surface!");
+
+      vulkSurface = vk::SurfaceKHR(surface);
    }
 
-   SDL_GL_MakeCurrent(window, glCtx);
+   {  // Get physical device. We'll just take the first available for now.
+      uint32_t count;
+      if (vulkInstance.enumeratePhysicalDevices(&count, nullptr) != vk::Result::eSuccess)
+         Logger::ErrorOut("Failed to enumerate physical devices!");
 
-   gladLoadGL();
-   glEnable(GL_DEBUG_OUTPUT);
-   glDebugMessageCallback(debugCallback, nullptr);
+      std::vector<vk::PhysicalDevice> physDevices(count);
+      vulkInstance.enumeratePhysicalDevices(&count, &physDevices[0]);
 
-
-   globalUBO =
-       GPUBuffer{GPUBuffer::Type::Uniform, GPUBuffer::Storage::StreamCopy};
-   globalUBO.bufferStorage(sizeof(GlobalUniforms), nullptr,
-                           GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT |
-                               GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-   gpuGlobalUniforms = globalUBO.mapRange<GlobalUniforms>(
-       0, sizeof(GlobalUniforms),
-       GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT);
-
-   if (gpuGlobalUniforms) {
-      memcpy(gpuGlobalUniforms, &globalUniforms, sizeof(GlobalUniforms));
+      vulkPhys = physDevices[0];
    }
+   std::vector<const char*> deviceExtensions;
+   {
+      auto                     extensions = vulkPhys.enumerateDeviceExtensionProperties();
+      std::vector<const char*> desired    = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEBUG_MARKER_EXTENSION_NAME};
 
-   setClearColor({1.0f, 1.0f, 1.0f, 1.0f});
-}
 
-void Renderer::updateRender() {
-   glViewport(0, 0, 1600, 900);
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-   for (const auto& drawable : drawables) {
-      // Debug stuff
-      // printf("Attempting to draw!");
-      // printf("Prog id: %i, VAO: %i\n", drawable.prog.id, drawable.geom.vao);
-
-      // use returns true if any state changes were made.
-      if (drawable.prog.use()) {
-         // If there were state changes, we probably need to rebind things
-         drawable.prog.setVecUniform(0, glm::vec3{-0.5f, -0.1f, 0.0f});
+      for (auto& ext : extensions) {
+         for (auto& desiredExt : desired)
+            if (std::string(ext.extensionName) == desiredExt) {
+               deviceExtensions.push_back(ext.extensionName);
+               break;
+            }
       }
-      drawable.geom.draw();
+   }
+   std::vector<const char*> deviceLayers;
+   {
+      auto                     layers        = vulkPhys.enumerateDeviceLayerProperties();
+      std::vector<const char*> desiredLayers = {"VK_LAYER_LUNARG_standard_validation"};
+
+      for (auto& layer : layers) {
+         for (auto& desiredLayer : desiredLayers)
+            if (std::string(layer.layerName) == desiredLayer) {
+               deviceLayers.push_back(layer.layerName);
+               break;
+            }
+      }
    }
 
-   SDL_GL_SwapWindow(window);
+
+   Logger::Write("INFO", "Initialized Renderer!");
+}
+
+Renderer::~Renderer() {
+   SDL_DestroyWindow(window);
+   vulkInstance.destroy();
+
+   SDL_Quit();
 }

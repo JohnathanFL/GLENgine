@@ -31,21 +31,9 @@ struct Vert {
    glm::vec4 color;
 };
 
-void printStats() {
-   Logger::Write(
-       "STATS",
-       "Version: " + std::string((const char*)glGetString(GL_VERSION)));
-   Logger::Write("STATS",
-                 "Vendor: " + std::string((const char*)glGetString(GL_VENDOR)));
-   Logger::Write(
-       "STATS",
-       "Renderer: " + std::string((const char*)glGetString(GL_RENDERER)));
-}
-
 struct App {
    App(const string& title, glm::ivec2 windowSize)
-       : renderer{title, windowSize.x, windowSize.y},
-         input{renderer.getWindow()} {}
+       : renderer{title, windowSize}, input{renderer.getWindow()} {}
    Renderer renderer;
    Input    input;
 };
@@ -54,38 +42,14 @@ int main() {
    try {
       Logger::SetLogFile("mcpp.log");
       App app{"mcpp", {1600, 900}};
-      printStats();
 
       app.renderer.setClearColor({44 / 255.0f, 53 / 255.0f, 57 / 255.0f, 1.0f});
 
 
       std::string tester = "Hello, world!";
       app.input.addEvent(0, Input::Event::Quit, [&](const EventData& e) {
-         // printf("I said %s before I died!", tester.c_str());
+         Logger::Write("INFO", "Quitting!");
       });
-
-
-      Shader vert(loadFile("triangle.vert"), Shader::Type::Vertex);
-      Shader frag(loadFile("triangle.frag"), Shader::Type::Fragment);
-      Shader geom(loadFile("triangle.geom"), Shader::Type::Geometry);
-
-      ShaderProgram prog(vert, frag);
-
-      std::vector<VertexAttribute> attribs = {
-          {VertexAttribute()
-               .withIndex(0)
-               .withSize(3)
-               .withType(VertexAttribute::Type::Float)
-               .withNormalized(false)
-               .withStride(7 * sizeof(float))
-               .withInitialOffset(nullptr)},
-          {VertexAttribute()
-               .withIndex(1)
-               .withSize(4)
-               .withType(VertexAttribute::Type::Float)
-               .withNormalized(false)
-               .withStride(7 * sizeof(float))
-               .withInitialOffset((const void*)(3 * sizeof(float)))}};
 
 
       std::vector<Vert> verts = {
@@ -94,18 +58,6 @@ int main() {
           {{0.0f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}};
       std::vector<unsigned> indicies = {0, 1, 2};
 
-      GPUBuffer vbuff(GPUBuffer::Type::Vertex, GPUBuffer::Storage::StaticDraw);
-      vbuff.upload(&verts[0], vec_sizeof(verts));
-
-      GPUBuffer ibuff(GPUBuffer::Type::Index, GPUBuffer::Storage::StaticDraw);
-      ibuff.upload(&indicies[0], vec_sizeof(indicies));
-
-      // If no ibuff desired, simply pass {} in its place
-      Geometry triangle{attribs, Geometry::DrawType::Triangles, 0, 3, vbuff,
-                        ibuff};
-      // TODO: Should renderer be a full scene graph, or should that be
-      // something else?
-      app.renderer.addDrawable(triangle, prog);
 
       while (app.input.handleEvents()) {
          app.renderer.updateRender();

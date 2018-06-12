@@ -1,57 +1,54 @@
 #pragma once
-#include <functional>
-#include <map>
-#include <string>
-#include <typeindex>
-#include <unordered_map>
-#include <unordered_set>
 
-#include "GLWrapper.hpp"
+
+#include <vulkan/vulkan.h>
+
+#include <vulkan/vulkan.hpp>
+
+#include <glm/glm.hpp>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
 
-#include "Geometry.hpp"
-#include "Shader.hpp"
+
+#include "Logger.hpp"
+
+#define GETTER(TYPE, VARNAME, FUNC_NAME) \
+   inline TYPE get##FUNC_NAME() { return this->VARNAME; }
+
+#define SETTER(TYPE, VARNAME, FUNC_NAME) \
+   inline void set##FUNC_NAME(TYPE x) { this->VARNAME = x; }
+
+#define REF_SETTER(TYPE, VARNAME, FUNC_NAME) \
+   inline void set##FUNC_NAME(const TYPE& x) { this->VARNAME = x; }
+
+#define REF_GETTER(TYPE, VARNAME, FUNC_NAME) \
+   inline const TYPE& get##FUNC_NAME() { return this->VARNAME; }
+
+#define GETTER_SETTER(TYPE, VARNAME, FUNC_NAME) \
+   GETTER(TYPE, VARNAME, FUNC_NAME)             \
+   SETTER(TYPE, VARNAME, FUNC_NAME)
+
+#define REF_GETTER_SETTER(TYPE, VARNAME, FUNC_NAME) \
+   REF_GETTER(TYPE, VARNAME, FUNC_NAME)             \
+   REF_SETTER(TYPE, VARNAME, FUNC_NAME)
 
 class Renderer {
   public:
-   Renderer(const std::string& title, int w, int h);
-   ~Renderer() {}
-
-   inline void addDrawable(const Geometry& geom, const ShaderProgram& prog) {
-      drawables.push_back({false, geom, prog});
-   }
-   void updateRender();
+   Renderer(const std::string& windowTitle, glm::ivec2 windowDims);
+   ~Renderer();
 
 
-   SDL_Window* getWindow() { return window; }
+   void updateRender() {}
 
-   const glm::vec4& getClearColor() const { return clearColor; }
-   void             setClearColor(const glm::vec4& col) {
-      clearColor = col;
-      glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-   }
-
-   struct GlobalUniforms {
-      float     time;
-      glm::mat4 projection;
-      glm::mat4 view;
-   };
-
-   GPUBuffer       globalUBO;
-   GlobalUniforms  globalUniforms = {0.0f, glm::mat4(0.0f), glm::mat4(0.0f)};
-   GlobalUniforms* gpuGlobalUniforms;
-
+   GETTER_SETTER(SDL_Window*, window, Window)
+   REF_GETTER_SETTER(glm::vec4, clearColor, ClearColor)
   private:
-   struct Drawable {
-      bool          skip;
-      Geometry      geom;
-      ShaderProgram prog;
-      // TODO: std::optional<Texture> tex;
-   };
-   std::vector<Drawable> drawables;  // TODO: Sorting based on state changes.
-   SDL_GLContext         glCtx;
-   SDL_Window*           window;
+   vk::PhysicalDevice vulkPhys;
+   vk::Queue          vulkQueue;
+   vk::SurfaceKHR     vulkSurface;
+   vk::Instance       vulkInstance;
+   SDL_Window*        window;
 
    glm::vec4 clearColor;
 };

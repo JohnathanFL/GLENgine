@@ -3,3 +3,5 @@ src
 .
 subprojects/glad
 glad
+build/meson-private
+$VULKAN_SDK/include

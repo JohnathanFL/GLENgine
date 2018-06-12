@@ -31,26 +31,37 @@ class Logger {
             ch = ' ';
    }
 
+   template <typename... Args>
+   static std::string buildStr(const Args&... args) {
+      std::stringstream messageBuilder;
+      addTo(messageBuilder, args...);
+      std::string finalMessage = messageBuilder.str();
+      trim(finalMessage);
+      return finalMessage;
+   }
+
+   static std::string makeHeader(const std::string& header) {
+      return buildStr("[", header, "]@", SDL_GetTicks() / 1000.0, ": ");
+   }
+
   public:
    ~Logger() { logFile.close(); }
 
+
    template <typename... Args>
-   static void Write(const std::string& from, const Args&... args) {
-      std::stringstream messageBuilder;
-      messageBuilder << "[" << from << "]@"
-                     << std::to_string(SDL_GetTicks() / 1000.0f) << "s: ";
-
-      addTo(messageBuilder, args...);
-
-
-      std::string overallMessage = messageBuilder.str();
-      trim(overallMessage);
-      overallMessage += '\n';
+   static void Write(const std::string& type, const Args&... args) {
+      std::string message = buildStr(makeHeader(type), args...);
 
       if (instance->logFile.is_open())
-         instance->logFile << overallMessage;
+         instance->logFile << message << std::endl;
 
-      std::cout << overallMessage;
+      std::cout << message << std::endl;
+   }
+
+   template <typename... Args>
+   static void ErrorOut(const Args&... args) {
+      Write("ERROR", args...);
+      exit(-1);
    }
 
    static void SetLogFile(const std::string& fileName) {

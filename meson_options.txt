@@ -1,0 +1,1 @@
+option('VulkanSDK_Path', type : 'string', value : '~/VulkanSDK/current/x86_64', description: 'Path to folder containing the VulkanSDK\'s bin, include, etc stuff')

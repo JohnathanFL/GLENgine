@@ -6,9 +6,9 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include "GLWrapper.hpp"
-
 #include <SDL2/SDL.h>
+
+#include "Settings.hpp"
 
 #include "Events.hpp"
 
