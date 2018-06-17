@@ -14,8 +14,7 @@ class Logger {
 
 
    template <typename T, typename... Args>
-   static void addTo(std::stringstream& stream, const T& arg,
-                     const Args&... args) {
+   static void addTo(std::stringstream& stream, const T& arg, const Args&... args) {
       stream << arg;
       addTo(stream, args...);
    }
@@ -62,6 +61,11 @@ class Logger {
    static void ErrorOut(const Args&... args) {
       Write("ERROR", args...);
       exit(-1);
+   }
+
+   template <typename... Args>
+   static void Info(const Args&... args) {
+      Write("INFO", args...);
    }
 
    static void SetLogFile(const std::string& fileName) {

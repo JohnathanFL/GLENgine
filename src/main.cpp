@@ -31,37 +31,26 @@ struct Vert {
    glm::vec4 color;
 };
 
-struct App {
-   App(const string& title, glm::ivec2 windowSize)
-       : renderer{title, windowSize}, input{renderer.getWindow()} {}
-   Renderer renderer;
-   Input    input;
-};
 
 int main() {
    try {
       Logger::SetLogFile("mcpp.log");
-      App app{"mcpp", {1600, 900}};
-
-      app.renderer.setClearColor({44 / 255.0f, 53 / 255.0f, 57 / 255.0f, 1.0f});
+      Renderer renderer{"mcpp", {1600, 900}};
 
 
-      std::string tester = "Hello, world!";
-      app.input.addEvent(0, Input::Event::Quit, [&](const EventData& e) {
-         Logger::Write("INFO", "Quitting!");
-      });
-
-
-      std::vector<Vert> verts = {
-          {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-          {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
-          {{0.0f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}};
+      std::vector<Vert>     verts    = {{{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+                                 {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+                                 {{0.0f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}};
       std::vector<unsigned> indicies = {0, 1, 2};
 
 
-      while (app.input.handleEvents()) {
-         app.renderer.updateRender();
-         // TODO: Gamelogic
+      bool running = true;
+      while (running) {
+         renderer.updateRender();
+         SDL_Event event;
+         while (SDL_PollEvent(&event))
+            if (event.type == SDL_QUIT)
+               running = false;
       }
    } catch (const std::runtime_error& e) {
       Logger::Write("UNCAUGHT EXCEPTION", e.what());

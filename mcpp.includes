@@ -26,3 +26,10 @@ subprojects/glengine/subprojects/entt/test/entt/entity
 subprojects/glengine/subprojects/entt/docs
 subprojects/glengine/subprojects/entt/test/entt/resource
 subprojects/glengine/subprojects/entt/test/mod
+subprojects/glengine/subprojects/entt/src/entt
+subprojects/glengine/subprojects/entt/test/entt/core
+build/subprojects/glengine
+subprojects/glengine/subprojects/entt/test/benchmark
+subprojects/glengine/subprojects/entt/test/entt/signal
+subprojects/glengine/subprojects/entt/test/entt/locator
+subprojects/glengine/subprojects/entt/test/entt/process
