@@ -42,6 +42,13 @@ void Renderer::getLayers() {
    }
 }
 
+VkBool32 Renderer::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj,
+                                 size_t location, int32_t code, const char* layerPrefix, const char* msg,
+                                 void* userData) {
+   Logger::Write("VULKAN", layerPrefix, " said: ", msg);
+   return true;
+}
+
 void Renderer::createInstance() {
    Logger::Info("Creating instance...");
    auto appInfo = vk::ApplicationInfo()

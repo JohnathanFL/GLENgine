@@ -49,6 +49,7 @@ class Renderer {
    GETTER_SETTER(SDL_Window*, window, Window)
    REF_GETTER_SETTER(glm::vec4, clearColor, ClearColor)
   private:
+   // All the vulkan stuff
    void setupDebugCallback();
    void initVulkan();
    void createInstance();
@@ -60,10 +61,7 @@ class Renderer {
 
    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType,
                                                        uint64_t obj, size_t location, int32_t code,
-                                                       const char* layerPrefix, const char* msg, void* userData) {
-      Logger::Write("VULKAN", layerPrefix, " said: ", msg);
-      return true;
-   }
+                                                       const char* layerPrefix, const char* msg, void* userData);
 
    VulkanObjects vulkan;
 
