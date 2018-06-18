@@ -23,6 +23,21 @@
 // than an addCustomGeom)
 
 
+struct VulkanObjects {
+   std::vector<const char*>   deviceExtensions;
+   std::vector<const char*>   deviceLayers;
+   vk::PhysicalDevice         physical;
+   vk::UniqueDevice           logical;
+   vk::Queue                  graphicsQueue;
+   vk::UniqueSurfaceKHR       surface;
+   vk::UniqueInstance         instance;
+   vk::DebugReportCallbackEXT debugCallback;
+
+   struct QueueIndices {
+      int graphics = -1;
+   } queueIndices;
+};
+
 class Renderer {
   public:
    Renderer(const std::string& windowTitle, glm::ivec2 windowDims);
@@ -34,28 +49,28 @@ class Renderer {
    GETTER_SETTER(SDL_Window*, window, Window)
    REF_GETTER_SETTER(glm::vec4, clearColor, ClearColor)
   private:
+   void setupDebugCallback();
    void initVulkan();
    void createInstance();
    void createSurface();
    void getPhysical();
+   void getLogical();
    void getExtensions();
    void getLayers();
 
    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType,
                                                        uint64_t obj, size_t location, int32_t code,
                                                        const char* layerPrefix, const char* msg, void* userData) {
-      Logger::Write("VULKAN", msg);
+      Logger::Write("VULKAN", layerPrefix, " said: ", msg);
+      return true;
    }
 
-   std::vector<const char*>                                                 deviceExtensions;
-   std::vector<const char*>                                                 deviceLayers;
-   vk::PhysicalDevice                                                       vulkPhys;
-   vk::Queue                                                                vulkQueue;
-   vk::UniqueSurfaceKHR                                                     vulkSurface;
-   vk::UniqueInstance                                                       vulkInstance;
-   vk::DebugReportCallbackEXT                                               vkCallback;
+   VulkanObjects vulkan;
+
+   std::vector<std::string>                                                 cmdBuffNames;
    std::vector<std::pair<vk::UniqueCommandBuffer, vk::UniqueCommandBuffer>> cmdBuffs;
-   SDL_Window*                                                              window;
+
+   SDL_Window* window;
 
    glm::ivec2 windowDims;
    glm::vec4  clearColor;
