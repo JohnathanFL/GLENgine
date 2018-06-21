@@ -21,6 +21,8 @@
 
 #include "Macros.hpp"
 
+#include "Shader.hpp"
+
 // Basic idea currently looks like this: A variable number of command buffer pairs. While 1 element is written to in
 // another thread, the other is being drawn. Ideas for separate pairs: 1 pair for voxel terrain, 1 pair for entities, 1
 // pair for completely static geometry, etc
@@ -34,23 +36,34 @@ struct QueueIndices {
    bool isComplete() { return AllAreNot(-1, graphics, present); }
 };
 
+struct SwapchainSupportInfo {
+   vk::SurfaceCapabilitiesKHR        caps;
+   std::vector<vk::SurfaceFormatKHR> formats;
+   std::vector<vk::PresentModeKHR>   modes;
+};
+
+struct SwapchainInfo {
+   vk::SurfaceFormatKHR format;
+   vk::Extent2D         res;
+};
+
 struct VulkanBoilerplate {
    std::vector<const char*>   deviceExtensions, deviceLayers;
    vk::PhysicalDevice         physical;
    vk::UniqueDevice           logical;
    vk::Queue                  graphicsQueue, presentQueue;
-   vk::SwapchainKHR           swapchain;
    vk::UniqueSurfaceKHR       surface;
    vk::UniqueInstance         instance;
    vk::DebugReportCallbackEXT debugCallback;
 
-   QueueIndices queueIndices;
-};
+   vk::SwapchainKHR           swapchain;
+   SwapchainInfo              swapInfo;
+   std::vector<vk::Image>     swapImages;
+   std::vector<vk::ImageView> swapViews;
 
-struct SwapchainSupportInfo {
-   vk::SurfaceCapabilitiesKHR        caps;
-   std::vector<vk::SurfaceFormatKHR> formats;
-   std::vector<vk::PresentModeKHR>   modes;
+   vk::PipelineLayout pipeLayout;
+
+   QueueIndices queueIndices;
 };
 
 
@@ -74,6 +87,7 @@ class Renderer {
    void getPhysical();
    void getLogical();
    void createSwapchain();
+   void createGraphicsPipeline();
 
    void getExtensions();
    void getLayers();
@@ -102,4 +116,7 @@ class Renderer {
 
    glm::uvec2 windowDims;
    glm::vec4  clearColor;
+
+   // Temp stuff for following the vulkan-tutorial
+   Shader vert, frag;
 };

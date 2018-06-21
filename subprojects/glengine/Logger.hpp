@@ -26,11 +26,21 @@ class Logger {
 
    // Shorthand write functions
 
+
+   template <typename... Args>
+   static void Error(const Args&... args) {
+      Write("ERROR", args...);
+   }
+
+   // Even shorter-hand for exiting the program AND error messaging
+   // I hear you'll eventually be able to say Logger::auto(auto),
+   // and this library will infer the rest from context.
    template <typename... Args>
    static void ErrorOut(const Args&... args) {
-      Write("ERROR", args...);
+      Error(args...);
       exit(-1);
    }
+
 
    template <typename... Args>
    static void Info(const Args&... args) {

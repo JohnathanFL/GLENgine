@@ -10,29 +10,15 @@ void Renderer::initVulkan() {
    getPhysical();
    getLogical();
    createSwapchain();
+   createGraphicsPipeline();
 }
 
-void Renderer::getLayers() {
-   Logger::Info("Getting Extensions");
-   auto                layers        = vulkan.physical.enumerateDeviceLayerProperties();
-   vector<const char*> desiredLayers = {"VK_LAYER_LUNARG_standard_validation"};
-
-   for (auto& layer : layers) {
-      for (auto& desiredLayer : desiredLayers)
-         if (string(layer.layerName) == desiredLayer) {
-            vulkan.deviceLayers.push_back(layer.layerName);
-
-            break;
-         } else
-            Logger::Write("Did not add layer: ", layer.layerName);
-   }
-}
 
 VkBool32 Renderer::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj,
                                  size_t location, int32_t code, const char* layerPrefix, const char* msg,
                                  void* userData) {
-   if (!(flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT))
-      Logger::Write("VULKAN", layerPrefix, " said: ", msg);
+   // if (!(flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT))
+   Logger::Write("VULKAN", layerPrefix, " said: ", msg);
    return true;
 }
 
@@ -203,6 +189,35 @@ QueueIndices Renderer::getQueueFamilyIndices(const vk::PhysicalDevice& physical,
    return result;
 }
 
+void Renderer::getExtensions() {
+   // Logger::Info("Getting Extensions");
+   auto                extensions = vulkan.physical.enumerateDeviceExtensionProperties();
+   vector<const char*> desired    = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+   for (auto& ext : extensions) {
+      for (auto& desiredExt : desired)
+         if (string(ext.extensionName) == desiredExt) {
+            vulkan.deviceExtensions.push_back(ext.extensionName);
+            // Logger::Info("Added extension: ", ext.extensionName);
+            break;
+         }
+   }
+}
+
+void Renderer::getLayers() {
+   Logger::Info("Getting Layers");
+   auto                layers        = vulkan.physical.enumerateDeviceLayerProperties();
+   vector<const char*> desiredLayers = {"VK_LAYER_LUNARG_standard_validation"};
+
+   for (auto& layer : layers) {
+      for (auto& desiredLayer : desiredLayers)
+         if (string(layer.layerName) == desiredLayer) {
+            vulkan.deviceLayers.push_back(layer.layerName);
+
+            break;
+         } else
+            Logger::Write("Did not add layer: ", layer.layerName);
+   }
+}
 
 void Renderer::getLogical() {
    Logger::Info("Creating Logical Device...");
@@ -223,12 +238,13 @@ void Renderer::getLogical() {
       queueCreateInfos.push_back(
           vk::DeviceQueueCreateInfo().setQueueCount(1).setQueueFamilyIndex(queue).setPQueuePriorities(&qPriority));
 
+   Logger::Write("Adding ", vulkan.deviceExtensions.size(), " extensions!");
 
    auto logicalInfo = vk::DeviceCreateInfo()
                           .setEnabledExtensionCount(vulkan.deviceExtensions.size())
                           .setPpEnabledExtensionNames(vulkan.deviceExtensions.data())
-                          .setEnabledLayerCount(vulkan.deviceLayers.size())
-                          .setPpEnabledLayerNames(vulkan.deviceLayers.data())
+                          //.setEnabledLayerCount(vulkan.deviceLayers.size())
+                          //.setPpEnabledLayerNames(vulkan.deviceLayers.data())
                           .setPQueueCreateInfos(queueCreateInfos.data())
                           .setQueueCreateInfoCount(queueCreateInfos.size())
                           .setPEnabledFeatures(&deviceFeatures);
@@ -241,6 +257,7 @@ void Renderer::getLogical() {
 }
 
 void Renderer::createSwapchain() {
+   Logger::Info("Creating Swapchain");
    SwapchainSupportInfo info = {vulkan.physical.getSurfaceCapabilitiesKHR(*vulkan.surface),
                                 vulkan.physical.getSurfaceFormatsKHR(*vulkan.surface),
                                 vulkan.physical.getSurfacePresentModesKHR(*vulkan.surface)};
@@ -249,15 +266,25 @@ void Renderer::createSwapchain() {
    vk::PresentModeKHR   presentMode   = choosePresentMode(info.modes);
    vk::Extent2D         res           = chooseResolution(info.caps, windowDims);
 
+   vulkan.swapInfo = {surfaceFormat, res};  // Cache these for later usage.
+
    uint32 imageCount = clamp(info.caps.minImageCount + 1, (uint32)0, info.caps.maxImageCount);
 
+   // Basic info
    auto swapCreateInfo = vk::SwapchainCreateInfoKHR()
                              .setMinImageCount(imageCount)
                              .setImageFormat(surfaceFormat.format)
                              .setImageColorSpace(surfaceFormat.colorSpace)
                              .setImageExtent(res)
                              .setImageArrayLayers(1)
-                             .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
+                             .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+                             .setPreTransform(info.caps.currentTransform)
+                             .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+                             .setPresentMode(presentMode)
+                             .setClipped(true)
+                             .setOldSwapchain(vk::SwapchainKHR(nullptr))
+                             .setSurface(*vulkan.surface);
+
 
    auto   indices        = getQueueFamilyIndices(vulkan.physical, *vulkan.surface);
    uint32 queueIndices[] = {(uint32)indices.graphics, (uint32)indices.present};
@@ -270,24 +297,94 @@ void Renderer::createSwapchain() {
           .setQueueFamilyIndexCount(0)
           .setPQueueFamilyIndices(nullptr);
 
-   swapCreateInfo.setPreTransform(info.caps.currentTransform)
-       .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-       .setPresentMode(presentMode)
-       .setClipped(true)
-       .setOldSwapchain(vk::SwapchainKHR(nullptr));
-   vulkan.swapchain = vulkan.logical->createSwapchainKHR(swapCreateInfo);
+
+   vulkan.swapchain  = vulkan.logical->createSwapchainKHR(swapCreateInfo);
+   vulkan.swapImages = vulkan.logical->getSwapchainImagesKHR(vulkan.swapchain);
+
+   for (const auto& image : vulkan.swapImages) {
+      // Method chaining factories are truly beautiful.
+      //... or perhaps terrible, I can't tell which yet.
+      auto viewInfo = vk::ImageViewCreateInfo()
+                          .setImage(image)
+                          .setViewType(vk::ImageViewType::e2D)
+                          .setFormat(vulkan.swapInfo.format.format)
+                          .setComponents(vk::ComponentMapping()
+                                             .setA(vk::ComponentSwizzle::eIdentity)
+                                             .setB(vk::ComponentSwizzle::eIdentity)
+                                             .setG(vk::ComponentSwizzle::eIdentity)
+                                             .setR(vk::ComponentSwizzle::eIdentity))
+                          .setSubresourceRange(vk::ImageSubresourceRange()
+                                                   .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                                   .setBaseMipLevel(0)
+                                                   .setLevelCount(1)
+                                                   .setBaseArrayLayer(0)
+                                                   .setLayerCount(1));
+
+      vulkan.swapViews.push_back(vulkan.logical->createImageView(viewInfo));
+   }
 }
 
-void Renderer::getExtensions() {
-   Logger::Info("Getting Extensions");
-   auto                extensions = vulkan.physical.enumerateDeviceExtensionProperties();
-   vector<const char*> desired    = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEBUG_MARKER_EXTENSION_NAME};
-   for (auto& ext : extensions) {
-      for (auto& desiredExt : desired)
-         if (string(ext.extensionName) == desiredExt) {
-            vulkan.deviceExtensions.push_back(ext.extensionName);
-            Logger::Info("Added extension: ", ext.extensionName);
-            break;
-         }
-   }
+void Renderer::createGraphicsPipeline() {
+   auto vertSrc = LoadFile("vert.spv");
+   auto fragSrc = LoadFile("frag.spv");
+
+   vert = Shader::FromSrc(vertSrc, *vulkan.logical);
+   frag = Shader::FromSrc(fragSrc, *vulkan.logical);
+
+   vk::PipelineShaderStageCreateInfo stages[2];
+
+   stages[0].setModule(vert).setStage(vk::ShaderStageFlagBits::eFragment).setPName("main");
+   stages[1].setModule(frag).setStage(vk::ShaderStageFlagBits::eFragment).setPName("main");
+
+   // Todo: Find a way to force clang-format to put this stuff on multiple lines, like a sane person.
+   auto vertPipelineInfo =
+       vk::PipelineVertexInputStateCreateInfo().setVertexBindingDescriptionCount(0).setVertexAttributeDescriptionCount(
+           0);
+
+   auto inputAsmInfo = vk::PipelineInputAssemblyStateCreateInfo()
+                           .setTopology(vk::PrimitiveTopology::eTriangleList)
+                           .setPrimitiveRestartEnable(false);
+
+   auto viewport = vk::Viewport()
+                       .setX(0.0f)
+                       .setY(0.0f)
+                       .setHeight(vulkan.swapInfo.res.height)
+                       .setWidth(vulkan.swapInfo.res.width)
+                       .setMinDepth(0.0f)
+                       .setMaxDepth(1.0f);
+
+   auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent(vulkan.swapInfo.res);
+
+   auto viewportStateInfo = vk::PipelineViewportStateCreateInfo()
+                                .setViewportCount(1)
+                                .setPViewports(&viewport)
+                                .setScissorCount(1)
+                                .setPScissors(&scissor);
+
+   auto rasterizerInfo = vk::PipelineRasterizationStateCreateInfo()
+                             .setDepthClampEnable(false)
+                             .setRasterizerDiscardEnable(false)
+                             .setPolygonMode(vk::PolygonMode::eFill)
+                             .setLineWidth(1.0f)
+                             .setCullMode(vk::CullModeFlagBits::eBack)
+                             .setFrontFace(vk::FrontFace::eClockwise)
+                             .setDepthBiasEnable(false);
+
+   auto multisampleInfo = vk::PipelineMultisampleStateCreateInfo()
+                              .setSampleShadingEnable(false)
+                              .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+                              .setMinSampleShading(1.0f)
+                              .setPSampleMask(nullptr);
+
+   auto colorBlendState = vk::PipelineColorBlendAttachmentState()
+                              .setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eB |
+                                                 vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eR)
+                              .setBlendEnable(false);
+
+   auto colorBlendInfo =
+       vk::PipelineColorBlendStateCreateInfo().setLogicOpEnable(false).setAttachmentCount(1).setPAttachments(
+           &colorBlendState);
+
+   auto pipeLayoutInfo = vk::PipelineLayoutCreateInfo().setSetLayoutCount(0);
+   vulkan.pipeLayout   = vulkan.logical->createPipelineLayout(pipeLayoutInfo);
 }

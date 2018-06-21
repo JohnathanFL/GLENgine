@@ -1,4 +1,10 @@
 #pragma once
+#include <fstream>
+#include <vector>
+
+#include "Types.hpp"
+
+#include "Logger.hpp"
 
 #define typeindex(CLASS) std::type_index(typeid(CLASS))
 
@@ -30,4 +36,25 @@ constexpr bool AllAreNot(const T& target, const T& arg) {
 template <typename T, typename... Args>
 constexpr bool AllAreNot(const T& target, const T& arg, const Args&... args) {
    return (arg != target) & AllAreNot(target, args...);
+}
+
+// Todo: Rework Macros/Logger/Types/etc into a separate library for base functions.
+inline std::vector<byte> LoadFile(const std::string& fileName) {
+   using namespace std;
+   vector<byte> result;
+
+   ifstream file(fileName, ios::ate | ios::binary);
+
+
+   if (!file)
+      Logger::Error("Failed to LoadFile ", fileName);
+
+   auto size = file.tellg();
+
+   result.resize(size);
+   file.seekg(0);
+   file.read(reinterpret_cast<sbyte*>(result.data()), size);
+   file.close();
+
+   return result;
 }

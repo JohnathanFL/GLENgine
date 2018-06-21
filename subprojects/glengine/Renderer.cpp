@@ -23,6 +23,12 @@ Renderer::Renderer(const string& windowTitle, glm::ivec2 windowDims) {
 
 
 Renderer::~Renderer() {
+   vulkan.logical->destroyPipelineLayout(vulkan.pipeLayout);
+
+   vulkan.logical->destroyShaderModule(vert);
+   vulkan.logical->destroyShaderModule(frag);
+
+   vulkan.logical->waitIdle();
    vkDestroySwapchainKHR(*vulkan.logical, vulkan.swapchain, nullptr);
    vulkan.logical->destroy();
 
