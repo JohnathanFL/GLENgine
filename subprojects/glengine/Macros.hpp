@@ -21,3 +21,13 @@
 #define REF_GETTER_SETTER(TYPE, VARNAME, FUNC_NAME) \
    REF_GETTER(TYPE, VARNAME, FUNC_NAME)             \
    REF_SETTER(TYPE, VARNAME, FUNC_NAME)
+
+template <typename T>
+constexpr bool AllAreNot(const T& target, const T& arg) {
+   return (arg != target);
+}
+
+template <typename T, typename... Args>
+constexpr bool AllAreNot(const T& target, const T& arg, const Args&... args) {
+   return (arg != target) & AllAreNot(target, args...);
+}

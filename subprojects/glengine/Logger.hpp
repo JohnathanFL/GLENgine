@@ -19,9 +19,9 @@ class Logger {
       std::string message = buildStr(makeHeader(type), args...);
 
       if (instance->logFile.is_open())
-         instance->logFile << message << std::endl;
+         instance->logFile << message << std::endl << std::flush;
 
-      std::cout << message << std::endl;
+      std::cout << message << std::endl << std::flush;
    }
 
    // Shorthand write functions

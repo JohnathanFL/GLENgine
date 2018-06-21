@@ -1,3 +1,5 @@
+subprojects/glengine/Types.hpp
+subprojects/glengine/VulkanRendererBoilerplate.cpp
 triangle.vert
 GLENgine.log
 README.md

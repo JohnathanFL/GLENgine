@@ -11,7 +11,7 @@ vulkan_hppInc = include_directories(vksdk_path + '/include')
 vulkanLib = compiler.find_library('vulkan')
 
 glengineLib = static_library('glengine',
-    ['Geometry.cpp', 'Shader.cpp', 'Logger.cpp', 'Renderer.cpp'],
+    ['Geometry.cpp', 'Shader.cpp', 'Logger.cpp', 'Renderer.cpp', 'VulkanRendererBoilerplate.cpp'],
     dependencies: [sdl2, dl, vulkanLib],
     include_directories: [vulkan_hppInc, entt]
     )
