@@ -10,7 +10,11 @@ void Renderer::initVulkan() {
    getPhysical();
    getLogical();
    createSwapchain();
+   createRenderPasses();
    createGraphicsPipeline();
+   createFrameBuffers();
+   createCommandPools();
+   createCommandBuffs();
 }
 
 
@@ -324,6 +328,34 @@ void Renderer::createSwapchain() {
    }
 }
 
+void Renderer::createRenderPasses() {
+   auto colorAttachDesc = vk::AttachmentDescription()
+                              .setFormat(vulkan.swapInfo.format.format)
+                              .setSamples(vk::SampleCountFlagBits::e1)
+                              .setLoadOp(vk::AttachmentLoadOp::eClear)
+                              .setStoreOp(vk::AttachmentStoreOp::eStore)
+                              .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                              .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                              .setInitialLayout(vk::ImageLayout::eUndefined)
+                              .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+   auto colorAttachmentRef =
+       vk::AttachmentReference().setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+   auto subpass = vk::SubpassDescription()
+                      .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                      .setColorAttachmentCount(1)
+                      .setPColorAttachments(&colorAttachmentRef);
+
+   auto renderPassInfo = vk::RenderPassCreateInfo()
+                             .setAttachmentCount(1)
+                             .setPAttachments(&colorAttachDesc)
+                             .setSubpassCount(1)
+                             .setPSubpasses(&subpass);
+
+   vulkan.renderPass = vulkan.logical->createRenderPass(renderPassInfo);
+}
+
 void Renderer::createGraphicsPipeline() {
    auto vertSrc = LoadFile("vert.spv");
    auto fragSrc = LoadFile("frag.spv");
@@ -387,4 +419,80 @@ void Renderer::createGraphicsPipeline() {
 
    auto pipeLayoutInfo = vk::PipelineLayoutCreateInfo().setSetLayoutCount(0);
    vulkan.pipeLayout   = vulkan.logical->createPipelineLayout(pipeLayoutInfo);
+
+   auto pipelineInfo = vk::GraphicsPipelineCreateInfo()
+                           .setStageCount(2)
+                           .setPStages(stages)
+                           .setPInputAssemblyState(&inputAsmInfo)
+                           .setPVertexInputState(&vertPipelineInfo)
+                           .setPViewportState(&viewportStateInfo)
+                           .setPRasterizationState(&rasterizerInfo)
+                           .setPMultisampleState(&multisampleInfo)
+                           .setPDepthStencilState(nullptr)
+                           .setPColorBlendState(&colorBlendInfo)
+                           .setPDynamicState(nullptr)
+                           .setLayout(vulkan.pipeLayout)
+                           .setRenderPass(vulkan.renderPass)
+                           .setSubpass(0)
+                           .setBasePipelineHandle(vk::Pipeline(nullptr))
+                           .setBasePipelineIndex(-1);
+
+   vulkan.pipeline = vulkan.logical->createGraphicsPipeline(vk::PipelineCache(nullptr), pipelineInfo);
+}
+
+void Renderer::createFrameBuffers() {
+   vulkan.swapFramebuffers.resize(vulkan.swapViews.size());
+
+   for (auto i = 0; i < vulkan.swapViews.size(); i++) {
+      vk::ImageView attachments[] = {vulkan.swapViews[i]};
+
+      auto frameBuffInfo = vk::FramebufferCreateInfo()
+                               .setRenderPass(vulkan.renderPass)
+                               .setAttachmentCount(1)
+                               .setPAttachments(attachments)
+                               .setWidth(vulkan.swapInfo.res.width)
+                               .setHeight(vulkan.swapInfo.res.height)
+                               .setLayers(1);
+      vulkan.swapFramebuffers[i] = vulkan.logical->createFramebufferUnique(frameBuffInfo);
+   }
+}
+
+void Renderer::createCommandPools() {
+   auto poolInfo = vk::CommandPoolCreateInfo()
+                       .setQueueFamilyIndex(getQueueFamilyIndices(vulkan.physical, *vulkan.surface).graphics)
+                       .setFlags(vk::CommandPoolCreateFlagBits(0));
+
+   vulkan.commandPool = vulkan.logical->createCommandPoolUnique(poolInfo);
+}
+
+void Renderer::createCommandBuffs() {
+   auto allocInfo = vk::CommandBufferAllocateInfo()
+                        .setCommandPool(*vulkan.commandPool)
+                        .setLevel(vk::CommandBufferLevel::ePrimary)
+                        .setCommandBufferCount(vulkan.swapFramebuffers.size());
+
+   vulkan.cmdBuffs = vulkan.logical->allocateCommandBuffers(allocInfo);
+
+   for (size_t i = 0; i < vulkan.cmdBuffs.size(); i++) {
+      const auto& cmd = vulkan.cmdBuffs[i];
+
+      auto beginInfo = vk::CommandBufferBeginInfo()
+                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse)
+                           .setPInheritanceInfo(nullptr);
+      cmd.begin(beginInfo);
+
+      clearColor.setColor(array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+      cmd.beginRenderPass(vk::RenderPassBeginInfo()
+                              .setRenderPass(vulkan.renderPass)
+                              .setRenderArea({{0, 0}, vulkan.swapInfo.res})
+                              .setFramebuffer(*vulkan.swapFramebuffers[i])
+                              .setClearValueCount(1)
+                              .setPClearValues(&clearColor),
+                          vk::SubpassContents::eInline);
+
+      cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, vulkan.pipeline);
+      cmd.draw(3, 1, 0, 0);
+      cmd.endRenderPass();
+      cmd.end();
+   }
 }

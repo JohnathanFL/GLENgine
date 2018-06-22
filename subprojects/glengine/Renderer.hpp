@@ -29,6 +29,7 @@
 // Possibly reserve cmdBuffs[0..1] for default static/dynamic geometry stuff (normal addGeom or other such func, rather
 // than an addCustomGeom)
 
+
 struct QueueIndices {
    int graphics = -1;
    int present  = -1;
@@ -48,12 +49,14 @@ struct SwapchainInfo {
 };
 
 struct VulkanBoilerplate {
-   std::vector<const char*>   deviceExtensions, deviceLayers;
-   vk::PhysicalDevice         physical;
-   vk::UniqueDevice           logical;
-   vk::Queue                  graphicsQueue, presentQueue;
-   vk::UniqueSurfaceKHR       surface;
-   vk::UniqueInstance         instance;
+   std::vector<const char*> deviceExtensions, deviceLayers;
+   vk::PhysicalDevice       physical;
+   vk::UniqueInstance       instance;
+   vk::UniqueDevice         logical;
+   vk::UniqueSurfaceKHR     surface;
+   vk::Queue                graphicsQueue, presentQueue;
+
+
    vk::DebugReportCallbackEXT debugCallback;
 
    vk::SwapchainKHR           swapchain;
@@ -61,9 +64,17 @@ struct VulkanBoilerplate {
    std::vector<vk::Image>     swapImages;
    std::vector<vk::ImageView> swapViews;
 
+   vk::RenderPass     renderPass;
+   vk::Pipeline       pipeline;
    vk::PipelineLayout pipeLayout;
 
+   std::vector<vk::UniqueFramebuffer> swapFramebuffers;
+
+   vk::UniqueCommandPool commandPool;
+
    QueueIndices queueIndices;
+
+   std::vector<vk::CommandBuffer> cmdBuffs;
 };
 
 
@@ -76,7 +87,6 @@ class Renderer {
    void updateRender() {}
 
    GETTER_SETTER(SDL_Window*, window, Window)
-   REF_GETTER_SETTER(glm::vec4, clearColor, ClearColor)
   private:
    // All the vulkan stuff. Note that many of these are defined in VulkanRendererBoilerplate.cpp instead
    // (Keeps Renderer.cpp readable)
@@ -87,7 +97,11 @@ class Renderer {
    void getPhysical();
    void getLogical();
    void createSwapchain();
+   void createRenderPasses();
    void createGraphicsPipeline();
+   void createFrameBuffers();
+   void createCommandPools();
+   void createCommandBuffs();
 
    void getExtensions();
    void getLayers();
@@ -114,8 +128,8 @@ class Renderer {
 
    SDL_Window* window;
 
-   glm::uvec2 windowDims;
-   glm::vec4  clearColor;
+   glm::uvec2     windowDims;
+   vk::ClearValue clearColor;
 
    // Temp stuff for following the vulkan-tutorial
    Shader vert, frag;

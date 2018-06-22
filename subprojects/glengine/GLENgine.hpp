@@ -11,3 +11,6 @@
 #include "Renderer.hpp"
 
 #include "Logger.hpp"
+
+// Note: Consider pulling in transwarp for overall library directing.
+// // Maybe just in the client app?

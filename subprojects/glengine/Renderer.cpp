@@ -23,14 +23,18 @@ Renderer::Renderer(const string& windowTitle, glm::ivec2 windowDims) {
 
 
 Renderer::~Renderer() {
-   vulkan.logical->destroyPipelineLayout(vulkan.pipeLayout);
+   const auto& dev = vulkan.logical;
 
-   vulkan.logical->destroyShaderModule(vert);
-   vulkan.logical->destroyShaderModule(frag);
+   dev->destroyPipeline(vulkan.pipeline);
+   dev->destroyPipelineLayout(vulkan.pipeLayout);
+   dev->destroyRenderPass(vulkan.renderPass);
 
-   vulkan.logical->waitIdle();
-   vkDestroySwapchainKHR(*vulkan.logical, vulkan.swapchain, nullptr);
-   vulkan.logical->destroy();
+   dev->destroyShaderModule(vert);
+   dev->destroyShaderModule(frag);
+
+   dev->waitIdle();
+   vkDestroySwapchainKHR(*dev, vulkan.swapchain, nullptr);
+   dev->destroy();
 
    vulkan.instance->destroy();
    SDL_DestroyWindow(window);

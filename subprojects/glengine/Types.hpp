@@ -1,12 +1,17 @@
 #pragma once
 #include <stdint.h>
 #define NO_T(TYPE) using TYPE = TYPE##_t;
+#define STRIP_WITH_U_T(TYPE) \
+   NO_T(TYPE);               \
+   NO_T(u##TYPE);
 
-NO_T(uint32);
-NO_T(uint64);
-NO_T(int32);
-NO_T(int64);
+// uint8, int64, etc
+STRIP_WITH_U_T(int8);
+STRIP_WITH_U_T(int16);
+STRIP_WITH_U_T(int32);
+STRIP_WITH_U_T(int64);
+
 
 using sbyte = char;  // <S>igned byte
 using ubyte = unsigned char;
-using byte  = ubyte;  // Default to a byte being unsigned. (Makes the most sense to me).
+using byte  = unsigned char;  // Default to a byte being unsigned. (Makes the most sense to me).

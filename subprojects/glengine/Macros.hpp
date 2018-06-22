@@ -41,7 +41,8 @@ constexpr bool AllAreNot(const T& target, const T& arg, const Args&... args) {
 // Todo: Rework Macros/Logger/Types/etc into a separate library for base functions.
 inline std::vector<byte> LoadFile(const std::string& fileName) {
    using namespace std;
-   vector<byte> result;
+   // Because for some stupid reason, std::vector<byte> is an error, yet (byte = unsigned char)....
+   std::vector<unsigned char> res(0);
 
    ifstream file(fileName, ios::ate | ios::binary);
 
@@ -51,10 +52,10 @@ inline std::vector<byte> LoadFile(const std::string& fileName) {
 
    auto size = file.tellg();
 
-   result.resize(size);
+   res.resize(size);
    file.seekg(0);
-   file.read(reinterpret_cast<sbyte*>(result.data()), size);
+   file.read(reinterpret_cast<sbyte*>(res.data()), size);
    file.close();
 
-   return result;
+   return res;
 }
