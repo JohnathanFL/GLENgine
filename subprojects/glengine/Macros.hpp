@@ -28,6 +28,9 @@
    REF_GETTER(TYPE, VARNAME, FUNC_NAME)             \
    REF_SETTER(TYPE, VARNAME, FUNC_NAME)
 
+#define CONVERTABLE_TO_MEMBER(TYPE, MEMTYPE, MEMBER) \
+   inline const operator MEMTYPE&() { return this->MEMBER; }
+
 template <typename T>
 constexpr bool AllAreNot(const T& target, const T& arg) {
    return (arg != target);

@@ -1,3 +1,5 @@
+subprojects/glengine/Pipeline.cpp
+subprojects/glengine/Pipeline.hpp
 subprojects/glengine/Types.hpp
 subprojects/glengine/VulkanRendererBoilerplate.cpp
 triangle.vert
@@ -46,9 +48,9 @@ glengine/Input.cpp
 glengine/Input.cpp
 glengine/Input.hpp
 glengine/Input.hpp
+glengine/Pipeline.hpp
+glengine/Pipeline.cpp
 glengine/Logger.cpp
-glengine/Logger.cpp
-glengine/Logger.hpp
 glengine/Logger.hpp
 glengine/Macros.hpp
 glengine/Pool.cpp

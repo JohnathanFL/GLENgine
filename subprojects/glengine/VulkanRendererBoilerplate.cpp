@@ -4,7 +4,31 @@
 
 using namespace std;
 
-void Renderer::initVulkan() {
+VulkanBackend::~VulkanBackend() {
+   const auto& dev = logical;
+
+   dev->destroyPipeline(this->pipeline);
+   dev->destroyPipelineLayout(this->pipeLayout);
+   dev->destroyRenderPass(this->renderPass);
+
+   dev->destroyShaderModule(this->vert);
+   dev->destroyShaderModule(this->frag);
+
+   dev->waitIdle();
+   vkDestroySwapchainKHR(*dev, this->swapchain, nullptr);
+   dev->destroy();
+
+   this->instance->destroy();
+   SDL_DestroyWindow(window);
+}
+
+void VulkanBackend::init(const string& windowTitle, glm::ivec2 windowDims) {
+   this->windowDims = windowDims;
+   window =
+       SDL_CreateWindow(windowTitle.c_str(), 0, 0, windowDims.x, windowDims.y, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN);
+   if (!window)
+      Logger::ErrorOut("Failed to create a window: ", SDL_GetError());
+
    createInstance();
    createSurface();
    getPhysical();
@@ -15,18 +39,19 @@ void Renderer::initVulkan() {
    createFrameBuffers();
    createCommandPools();
    createCommandBuffs();
+   createSemaphores();
 }
 
 
-VkBool32 Renderer::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj,
-                                 size_t location, int32_t code, const char* layerPrefix, const char* msg,
-                                 void* userData) {
+VkBool32 VulkanBackend::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj,
+                                      size_t location, int32_t code, const char* layerPrefix, const char* msg,
+                                      void* userData) {
    // if (!(flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT))
    Logger::Write("VULKAN", layerPrefix, " said: ", msg);
    return true;
 }
 
-void Renderer::createInstance() {
+void VulkanBackend::createInstance() {
    Logger::Info("Creating instance...");
    auto appInfo = vk::ApplicationInfo()
                       .setApplicationVersion(1)
@@ -49,7 +74,7 @@ void Renderer::createInstance() {
                          .setPpEnabledExtensionNames(extensions.data());
 
 
-   if (!(vulkan.instance = vk::createInstanceUnique(createInfo)))
+   if (!(this->instance = vk::createInstanceUnique(createInfo)))
       Logger::ErrorOut("Failed to create Vulkan instance!");
    else
       Logger::Info("Created Vulkan instance!");
@@ -57,7 +82,7 @@ void Renderer::createInstance() {
    setupDebugCallback();
 }
 
-void Renderer::setupDebugCallback() {
+void VulkanBackend::setupDebugCallback() {
    auto debugInfo =
        vk::DebugReportCallbackCreateInfoEXT()
            .setFlags(vk::DebugReportFlagBitsEXT(VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT |
@@ -68,25 +93,25 @@ void Renderer::setupDebugCallback() {
    VkDebugReportCallbackCreateInfoEXT info = debugInfo;
    VkDebugReportCallbackEXT           callBack;
    // Dear lord why isn't this in the main vulkan lib?
-   auto func = vulkan.instance->getProcAddr("vkCreateDebugReportCallbackEXT");
+   auto func = this->instance->getProcAddr("vkCreateDebugReportCallbackEXT");
    if (func) {
-      reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(func)(vulkan.instance.get(), &info, nullptr, &callBack);
-      vulkan.debugCallback = callBack;
+      reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(func)(this->instance.get(), &info, nullptr, &callBack);
+      this->debugCallbackObj = callBack;
       Logger::Info("Debug reporting enabled!");
    }
 }
 
 
-void Renderer::createSurface() {
+void VulkanBackend::createSurface() {
    VkSurfaceKHR surface;
-   if (!SDL_Vulkan_CreateSurface(window, vulkan.instance.get(), &surface))
+   if (!SDL_Vulkan_CreateSurface(window, this->instance.get(), &surface))
       Logger::ErrorOut("Failed to create vulkan surface!");
 
-   vulkan.surface = vk::UniqueSurfaceKHR(surface);
+   this->surface = vk::UniqueSurfaceKHR(surface);
 }
 
 
-bool Renderer::isDeviceSuitable(const vk::PhysicalDevice& dev, const vk::SurfaceKHR& surface) {
+bool VulkanBackend::isDeviceSuitable(const vk::PhysicalDevice& dev, const vk::SurfaceKHR& surface) {
    vk::PhysicalDeviceProperties props;
    vk::PhysicalDeviceFeatures   features;
 
@@ -113,7 +138,7 @@ bool Renderer::isDeviceSuitable(const vk::PhysicalDevice& dev, const vk::Surface
    return suitable;
 }
 
-vk::SurfaceFormatKHR Renderer::chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
+vk::SurfaceFormatKHR VulkanBackend::chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
    static const vk::SurfaceFormatKHR idealFormat = {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
 
    if ((formats.size() == 1) && (formats[0].format == vk::Format::eUndefined))
@@ -129,7 +154,7 @@ vk::SurfaceFormatKHR Renderer::chooseSurfaceFormat(const std::vector<vk::Surface
    }
 }
 
-vk::PresentModeKHR Renderer::choosePresentMode(const std::vector<vk::PresentModeKHR>& modes) {
+vk::PresentModeKHR VulkanBackend::choosePresentMode(const std::vector<vk::PresentModeKHR>& modes) {
    const vk::PresentModeKHR rankedModes[] = {vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate};
 
    // Try to get a preferred mode
@@ -143,7 +168,7 @@ vk::PresentModeKHR Renderer::choosePresentMode(const std::vector<vk::PresentMode
    return vk::PresentModeKHR::eFifo;
 }
 
-vk::Extent2D Renderer::chooseResolution(const vk::SurfaceCapabilitiesKHR& caps, const glm::uvec2& curRes) {
+vk::Extent2D VulkanBackend::chooseResolution(const vk::SurfaceCapabilitiesKHR& caps, const glm::uvec2& curRes) {
    if (caps.currentExtent.width != numeric_limits<uint32>::max())
       return caps.currentExtent;
    else {
@@ -156,26 +181,26 @@ vk::Extent2D Renderer::chooseResolution(const vk::SurfaceCapabilitiesKHR& caps, 
    }
 }
 
-void Renderer::getPhysical() {
+void VulkanBackend::getPhysical() {
    Logger::Info("Getting Physical Device...");
 
    // At the moment I only have 1 physical device, so this is rather useless, but whatever.
 
    uint32_t count;
-   if (vulkan.instance->enumeratePhysicalDevices(&count, nullptr) != vk::Result::eSuccess)
+   if (this->instance->enumeratePhysicalDevices(&count, nullptr) != vk::Result::eSuccess)
       Logger::ErrorOut("Failed to enumerate physical devices!");
 
    vector<vk::PhysicalDevice> physDevices(count);
-   vulkan.instance->enumeratePhysicalDevices(&count, &physDevices[0]);
+   this->instance->enumeratePhysicalDevices(&count, &physDevices[0]);
    for (auto& dev : physDevices) {
-      if (isDeviceSuitable(dev, vulkan.surface.get())) {
-         vulkan.physical = dev;
+      if (isDeviceSuitable(dev, this->surface.get())) {
+         this->physical = dev;
          break;
       }
    }
 }
 
-QueueIndices Renderer::getQueueFamilyIndices(const vk::PhysicalDevice& physical, const vk::SurfaceKHR& surface) {
+QueueIndices VulkanBackend::getQueueFamilyIndices(const vk::PhysicalDevice& physical, const vk::SurfaceKHR& surface) {
    QueueIndices result;
 
    auto qFamilyProps = physical.getQueueFamilyProperties();
@@ -193,29 +218,29 @@ QueueIndices Renderer::getQueueFamilyIndices(const vk::PhysicalDevice& physical,
    return result;
 }
 
-void Renderer::getExtensions() {
+void VulkanBackend::getExtensions() {
    // Logger::Info("Getting Extensions");
-   auto                extensions = vulkan.physical.enumerateDeviceExtensionProperties();
+   auto                extensions = this->physical.enumerateDeviceExtensionProperties();
    vector<const char*> desired    = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
    for (auto& ext : extensions) {
       for (auto& desiredExt : desired)
          if (string(ext.extensionName) == desiredExt) {
-            vulkan.deviceExtensions.push_back(ext.extensionName);
+            this->deviceExtensions.push_back(ext.extensionName);
             // Logger::Info("Added extension: ", ext.extensionName);
             break;
          }
    }
 }
 
-void Renderer::getLayers() {
+void VulkanBackend::getLayers() {
    Logger::Info("Getting Layers");
-   auto                layers        = vulkan.physical.enumerateDeviceLayerProperties();
+   auto                layers        = this->physical.enumerateDeviceLayerProperties();
    vector<const char*> desiredLayers = {"VK_LAYER_LUNARG_standard_validation"};
 
    for (auto& layer : layers) {
       for (auto& desiredLayer : desiredLayers)
          if (string(layer.layerName) == desiredLayer) {
-            vulkan.deviceLayers.push_back(layer.layerName);
+            this->deviceLayers.push_back(layer.layerName);
 
             break;
          } else
@@ -223,18 +248,18 @@ void Renderer::getLayers() {
    }
 }
 
-void Renderer::getLogical() {
+void VulkanBackend::getLogical() {
    Logger::Info("Creating Logical Device...");
    getExtensions();
    getLayers();
 
 
    // By the time we're here, we have finalized our physical device, so cache the indices.
-   vulkan.queueIndices = getQueueFamilyIndices(vulkan.physical, vulkan.surface.get());
+   this->queueIndices = getQueueFamilyIndices(this->physical, this->surface.get());
 
    vk::PhysicalDeviceFeatures deviceFeatures;
 
-   set<int>                          queueFamilies = {vulkan.queueIndices.present, vulkan.queueIndices.graphics};
+   set<int>                          queueFamilies = {this->queueIndices.present, this->queueIndices.graphics};
    vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 
    float qPriority = 1.0f;
@@ -242,35 +267,35 @@ void Renderer::getLogical() {
       queueCreateInfos.push_back(
           vk::DeviceQueueCreateInfo().setQueueCount(1).setQueueFamilyIndex(queue).setPQueuePriorities(&qPriority));
 
-   Logger::Write("Adding ", vulkan.deviceExtensions.size(), " extensions!");
+   Logger::Write("Adding ", this->deviceExtensions.size(), " extensions!");
 
    auto logicalInfo = vk::DeviceCreateInfo()
-                          .setEnabledExtensionCount(vulkan.deviceExtensions.size())
-                          .setPpEnabledExtensionNames(vulkan.deviceExtensions.data())
-                          //.setEnabledLayerCount(vulkan.deviceLayers.size())
-                          //.setPpEnabledLayerNames(vulkan.deviceLayers.data())
+                          .setEnabledExtensionCount(this->deviceExtensions.size())
+                          .setPpEnabledExtensionNames(this->deviceExtensions.data())
+                          //.setEnabledLayerCount(this->deviceLayers.size())
+                          //.setPpEnabledLayerNames(this->deviceLayers.data())
                           .setPQueueCreateInfos(queueCreateInfos.data())
                           .setQueueCreateInfoCount(queueCreateInfos.size())
                           .setPEnabledFeatures(&deviceFeatures);
 
-   vulkan.logical = vk::UniqueDevice(vulkan.physical.createDevice(logicalInfo));
+   this->logical = vk::UniqueDevice(this->physical.createDevice(logicalInfo));
 
 
-   vulkan.graphicsQueue = vulkan.logical->getQueue(vulkan.queueIndices.graphics, 0);
-   vulkan.presentQueue  = vulkan.logical->getQueue(vulkan.queueIndices.present, 0);
+   this->graphicsQueue = this->logical->getQueue(this->queueIndices.graphics, 0);
+   this->presentQueue  = this->logical->getQueue(this->queueIndices.present, 0);
 }
 
-void Renderer::createSwapchain() {
+void VulkanBackend::createSwapchain() {
    Logger::Info("Creating Swapchain");
-   SwapchainSupportInfo info = {vulkan.physical.getSurfaceCapabilitiesKHR(*vulkan.surface),
-                                vulkan.physical.getSurfaceFormatsKHR(*vulkan.surface),
-                                vulkan.physical.getSurfacePresentModesKHR(*vulkan.surface)};
+   SwapchainSupportInfo info = {this->physical.getSurfaceCapabilitiesKHR(*this->surface),
+                                this->physical.getSurfaceFormatsKHR(*this->surface),
+                                this->physical.getSurfacePresentModesKHR(*this->surface)};
 
    vk::SurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(info.formats);
    vk::PresentModeKHR   presentMode   = choosePresentMode(info.modes);
    vk::Extent2D         res           = chooseResolution(info.caps, windowDims);
 
-   vulkan.swapInfo = {surfaceFormat, res};  // Cache these for later usage.
+   this->swapInfo = {surfaceFormat, res};  // Cache these for later usage.
 
    uint32 imageCount = clamp(info.caps.minImageCount + 1, (uint32)0, info.caps.maxImageCount);
 
@@ -287,10 +312,10 @@ void Renderer::createSwapchain() {
                              .setPresentMode(presentMode)
                              .setClipped(true)
                              .setOldSwapchain(vk::SwapchainKHR(nullptr))
-                             .setSurface(*vulkan.surface);
+                             .setSurface(*this->surface);
 
 
-   auto   indices        = getQueueFamilyIndices(vulkan.physical, *vulkan.surface);
+   auto   indices        = getQueueFamilyIndices(this->physical, *this->surface);
    uint32 queueIndices[] = {(uint32)indices.graphics, (uint32)indices.present};
    if (indices.graphics != indices.present)
       swapCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
@@ -302,16 +327,16 @@ void Renderer::createSwapchain() {
           .setPQueueFamilyIndices(nullptr);
 
 
-   vulkan.swapchain  = vulkan.logical->createSwapchainKHR(swapCreateInfo);
-   vulkan.swapImages = vulkan.logical->getSwapchainImagesKHR(vulkan.swapchain);
+   this->swapchain  = this->logical->createSwapchainKHR(swapCreateInfo);
+   this->swapImages = this->logical->getSwapchainImagesKHR(this->swapchain);
 
-   for (const auto& image : vulkan.swapImages) {
+   for (const auto& image : this->swapImages) {
       // Method chaining factories are truly beautiful.
       //... or perhaps terrible, I can't tell which yet.
       auto viewInfo = vk::ImageViewCreateInfo()
                           .setImage(image)
                           .setViewType(vk::ImageViewType::e2D)
-                          .setFormat(vulkan.swapInfo.format.format)
+                          .setFormat(this->swapInfo.format.format)
                           .setComponents(vk::ComponentMapping()
                                              .setA(vk::ComponentSwizzle::eIdentity)
                                              .setB(vk::ComponentSwizzle::eIdentity)
@@ -324,13 +349,13 @@ void Renderer::createSwapchain() {
                                                    .setBaseArrayLayer(0)
                                                    .setLayerCount(1));
 
-      vulkan.swapViews.push_back(vulkan.logical->createImageView(viewInfo));
+      this->swapViews.push_back(this->logical->createImageView(viewInfo));
    }
 }
 
-void Renderer::createRenderPasses() {
+void VulkanBackend::createRenderPasses() {
    auto colorAttachDesc = vk::AttachmentDescription()
-                              .setFormat(vulkan.swapInfo.format.format)
+                              .setFormat(this->swapInfo.format.format)
                               .setSamples(vk::SampleCountFlagBits::e1)
                               .setLoadOp(vk::AttachmentLoadOp::eClear)
                               .setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -347,26 +372,37 @@ void Renderer::createRenderPasses() {
                       .setColorAttachmentCount(1)
                       .setPColorAttachments(&colorAttachmentRef);
 
+   auto dep =
+       vk::SubpassDependency()
+           .setSrcSubpass(VK_SUBPASS_EXTERNAL)
+           .setDstSubpass(0)
+           .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+           .setSrcAccessMask(vk::AccessFlags(0))
+           .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+           .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
+
    auto renderPassInfo = vk::RenderPassCreateInfo()
                              .setAttachmentCount(1)
                              .setPAttachments(&colorAttachDesc)
                              .setSubpassCount(1)
-                             .setPSubpasses(&subpass);
+                             .setPSubpasses(&subpass)
+                             .setDependencyCount(1)
+                             .setPDependencies(&dep);
 
-   vulkan.renderPass = vulkan.logical->createRenderPass(renderPassInfo);
+   this->renderPass = this->logical->createRenderPass(renderPassInfo);
 }
 
-void Renderer::createGraphicsPipeline() {
+void VulkanBackend::createGraphicsPipeline() {
    auto vertSrc = LoadFile("vert.spv");
    auto fragSrc = LoadFile("frag.spv");
 
-   vert = Shader::FromSrc(vertSrc, *vulkan.logical);
-   frag = Shader::FromSrc(fragSrc, *vulkan.logical);
+   this->vert = Shader::FromSrc(vertSrc, *this->logical);
+   this->frag = Shader::FromSrc(fragSrc, *this->logical);
 
    vk::PipelineShaderStageCreateInfo stages[2];
 
-   stages[0].setModule(vert).setStage(vk::ShaderStageFlagBits::eFragment).setPName("main");
-   stages[1].setModule(frag).setStage(vk::ShaderStageFlagBits::eFragment).setPName("main");
+   stages[0].setModule(this->vert).setStage(vk::ShaderStageFlagBits::eVertex).setPName("main");
+   stages[1].setModule(this->frag).setStage(vk::ShaderStageFlagBits::eFragment).setPName("main");
 
    // Todo: Find a way to force clang-format to put this stuff on multiple lines, like a sane person.
    auto vertPipelineInfo =
@@ -380,12 +416,12 @@ void Renderer::createGraphicsPipeline() {
    auto viewport = vk::Viewport()
                        .setX(0.0f)
                        .setY(0.0f)
-                       .setHeight(vulkan.swapInfo.res.height)
-                       .setWidth(vulkan.swapInfo.res.width)
+                       .setHeight(this->swapInfo.res.height)
+                       .setWidth(this->swapInfo.res.width)
                        .setMinDepth(0.0f)
                        .setMaxDepth(1.0f);
 
-   auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent(vulkan.swapInfo.res);
+   auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent(this->swapInfo.res);
 
    auto viewportStateInfo = vk::PipelineViewportStateCreateInfo()
                                 .setViewportCount(1)
@@ -418,7 +454,7 @@ void Renderer::createGraphicsPipeline() {
            &colorBlendState);
 
    auto pipeLayoutInfo = vk::PipelineLayoutCreateInfo().setSetLayoutCount(0);
-   vulkan.pipeLayout   = vulkan.logical->createPipelineLayout(pipeLayoutInfo);
+   this->pipeLayout    = this->logical->createPipelineLayout(pipeLayoutInfo);
 
    auto pipelineInfo = vk::GraphicsPipelineCreateInfo()
                            .setStageCount(2)
@@ -431,68 +467,76 @@ void Renderer::createGraphicsPipeline() {
                            .setPDepthStencilState(nullptr)
                            .setPColorBlendState(&colorBlendInfo)
                            .setPDynamicState(nullptr)
-                           .setLayout(vulkan.pipeLayout)
-                           .setRenderPass(vulkan.renderPass)
+                           .setLayout(this->pipeLayout)
+                           .setRenderPass(this->renderPass)
                            .setSubpass(0)
                            .setBasePipelineHandle(vk::Pipeline(nullptr))
                            .setBasePipelineIndex(-1);
 
-   vulkan.pipeline = vulkan.logical->createGraphicsPipeline(vk::PipelineCache(nullptr), pipelineInfo);
+   this->pipeline = this->logical->createGraphicsPipeline(vk::PipelineCache(nullptr), pipelineInfo);
 }
 
-void Renderer::createFrameBuffers() {
-   vulkan.swapFramebuffers.resize(vulkan.swapViews.size());
+void VulkanBackend::createFrameBuffers() {
+   this->swapFramebuffers.resize(this->swapViews.size());
 
-   for (auto i = 0; i < vulkan.swapViews.size(); i++) {
-      vk::ImageView attachments[] = {vulkan.swapViews[i]};
+   for (auto i = 0; i < this->swapViews.size(); i++) {
+      vk::ImageView attachments[] = {this->swapViews[i]};
 
       auto frameBuffInfo = vk::FramebufferCreateInfo()
-                               .setRenderPass(vulkan.renderPass)
+                               .setRenderPass(this->renderPass)
                                .setAttachmentCount(1)
                                .setPAttachments(attachments)
-                               .setWidth(vulkan.swapInfo.res.width)
-                               .setHeight(vulkan.swapInfo.res.height)
+                               .setWidth(this->swapInfo.res.width)
+                               .setHeight(this->swapInfo.res.height)
                                .setLayers(1);
-      vulkan.swapFramebuffers[i] = vulkan.logical->createFramebufferUnique(frameBuffInfo);
+      this->swapFramebuffers[i] = this->logical->createFramebufferUnique(frameBuffInfo);
    }
 }
 
-void Renderer::createCommandPools() {
+void VulkanBackend::createCommandPools() {
    auto poolInfo = vk::CommandPoolCreateInfo()
-                       .setQueueFamilyIndex(getQueueFamilyIndices(vulkan.physical, *vulkan.surface).graphics)
+                       .setQueueFamilyIndex(getQueueFamilyIndices(this->physical, *this->surface).graphics)
                        .setFlags(vk::CommandPoolCreateFlagBits(0));
 
-   vulkan.commandPool = vulkan.logical->createCommandPoolUnique(poolInfo);
+   this->commandPool = this->logical->createCommandPoolUnique(poolInfo);
 }
 
-void Renderer::createCommandBuffs() {
+void VulkanBackend::createCommandBuffs() {
    auto allocInfo = vk::CommandBufferAllocateInfo()
-                        .setCommandPool(*vulkan.commandPool)
+                        .setCommandPool(*this->commandPool)
                         .setLevel(vk::CommandBufferLevel::ePrimary)
-                        .setCommandBufferCount(vulkan.swapFramebuffers.size());
+                        .setCommandBufferCount(this->swapFramebuffers.size());
 
-   vulkan.cmdBuffs = vulkan.logical->allocateCommandBuffers(allocInfo);
+   this->cmdBuffs = this->logical->allocateCommandBuffers(allocInfo);
 
-   for (size_t i = 0; i < vulkan.cmdBuffs.size(); i++) {
-      const auto& cmd = vulkan.cmdBuffs[i];
+   for (size_t i = 0; i < this->cmdBuffs.size(); i++) {
+      const auto& cmd = this->cmdBuffs[i];
 
       auto beginInfo = vk::CommandBufferBeginInfo()
                            .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse)
                            .setPInheritanceInfo(nullptr);
       cmd.begin(beginInfo);
 
-      clearColor.setColor(array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+      this->clearColor.setColor(array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
       cmd.beginRenderPass(vk::RenderPassBeginInfo()
-                              .setRenderPass(vulkan.renderPass)
-                              .setRenderArea({{0, 0}, vulkan.swapInfo.res})
-                              .setFramebuffer(*vulkan.swapFramebuffers[i])
+                              .setRenderPass(this->renderPass)
+                              .setRenderArea({{0, 0}, this->swapInfo.res})
+                              .setFramebuffer(*this->swapFramebuffers[i])
                               .setClearValueCount(1)
                               .setPClearValues(&clearColor),
                           vk::SubpassContents::eInline);
 
-      cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, vulkan.pipeline);
+      cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, this->pipeline);
       cmd.draw(3, 1, 0, 0);
       cmd.endRenderPass();
       cmd.end();
+   }
+}
+
+void VulkanBackend::createSemaphores() {
+   vk::SemaphoreCreateInfo semInfo;
+   for (size_t i = 0; i < this->maxFramesInFlight; i++) {
+      this->imageAvailSems.push_back(this->logical->createSemaphoreUnique(semInfo));
+      this->renderFinishedSems.push_back(this->logical->createSemaphoreUnique(semInfo));
    }
 }

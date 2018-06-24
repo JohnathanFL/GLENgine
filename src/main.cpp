@@ -53,7 +53,7 @@ int main() {
                running = false;
       }
    } catch (const std::runtime_error& e) {
-      Logger::Write("UNCAUGHT EXCEPTION", e.what());
+      Logger::Error("UNCAUGHT EXCEPTION: ", e.what());
       // TODO: Forcible cleanup.
    }
 
