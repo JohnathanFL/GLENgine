@@ -11,19 +11,41 @@
 struct Shader {
    vk::Device       dev;
    vk::ShaderModule shaderMod;
+   // For now, the entry must be main.
+   // TODO: Shader specialization
+
+   enum class Stage : uint {
+      Vertex      = VK_SHADER_STAGE_VERTEX_BIT,
+      TessControl = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+      TessEval    = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+      Geometry    = VK_SHADER_STAGE_GEOMETRY_BIT,
+      Fragment    = VK_SHADER_STAGE_FRAGMENT_BIT,
+      Compute     = VK_SHADER_STAGE_COMPUTE_BIT,
+      AllGraphics = VK_SHADER_STAGE_ALL_GRAPHICS,
+      All         = VK_SHADER_STAGE_ALL,
+      MaxEnum     = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,
+   } stage;
 
    // Todo: I had this sorta thing in the OpenGL backend, maybe reintroduce it?
    // enum class Type { Vertex, Fragment, Compute, Geometry } type;
 
-   static Shader FromSrc(const std::vector<byte>& src, vk::Device dev) {
+   static Shader FromSrc(const std::vector<byte>& src, Stage stage, vk::Device dev) {
       auto createInfo =
           vk::ShaderModuleCreateInfo().setCodeSize(src.size()).setPCode(reinterpret_cast<const uint32*>(src.data()));
 
-      return Shader{dev, dev.createShaderModule(createInfo)};
+      return Shader{dev, dev.createShaderModule(createInfo), stage};
+   }
+
+   vk::PipelineShaderStageCreateInfo toPipelineCreateInfo() {
+      return vk::PipelineShaderStageCreateInfo()
+          .setStage(vk::ShaderStageFlagBits(stage))
+          .setModule(shaderMod)
+          .setPName("main")
+          .setPSpecializationInfo(nullptr);
    }
 
    // Since this is basically a thin wrapper, I figure this is appropriate.
-   inline operator vk::ShaderModule&() { return shaderMod; }
+   CONVERTABLE_TO_MEMBER(shaderMod)
 };
 
 struct ShaderProgram {};
