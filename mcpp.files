@@ -59,7 +59,7 @@ subprojects/glengine/Macros.hpp
 subprojects/glengine/Pool.cpp
 subprojects/glengine/Pool.hpp
 subprojects/glengine/Renderer.cpp
-subprojects/glengine/Renderer.cpp
+subprojects/glengine/RenderingBackend.hpp
 subprojects/glengine/Renderer.hpp
 subprojects/glengine/Renderer.hpp
 subprojects/glengine/ResourceCache.cpp
@@ -67,7 +67,8 @@ subprojects/glengine/ResourceCache.hpp
 subprojects/glengine/Settings.cpp
 subprojects/glengine/Settings.hpp
 subprojects/glengine/Shader.cpp
-subprojects/glengine/Shader.cpp
+subprojects/glengine/VulkanBackend.cpp
+subprojects/glengine/VulkanBackend.hpp
 subprojects/glengine/Shader.hpp
 subprojects/glengine/Shader.hpp
 subprojects/glengine/getVulkanSDK.sh
