@@ -396,8 +396,8 @@ void VulkanBackend::createGraphicsPipeline() {
    auto vertSrc = LoadFile("vert.spv");
    auto fragSrc = LoadFile("frag.spv");
 
-   this->vert = Shader::FromSrc(vertSrc, *this->logical);
-   this->frag = Shader::FromSrc(fragSrc, *this->logical);
+   this->vert = Shader::FromSrc(vertSrc, Shader::Stage::Vertex, *this->logical);
+   this->frag = Shader::FromSrc(fragSrc, Shader::Stage::Fragment, *this->logical);
 
    vk::PipelineShaderStageCreateInfo stages[2];
 

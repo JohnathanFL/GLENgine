@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_map>
+
 #include <stdint.h>
 #define NO_T(TYPE) using TYPE = TYPE##_t;
 #define STRIP_WITH_U_T(TYPE) \
@@ -15,3 +17,9 @@ STRIP_WITH_U_T(int64);
 using sbyte = char;  // <S>igned byte
 using ubyte = unsigned char;
 using byte  = unsigned char;  // Default to a byte being unsigned. (Makes the most sense to me).
+
+template <typename T>
+using NamedMap = std::unordered_map<std::string, T>;
+
+template <typename T>
+using MappedToString = std::unordered_map<T, std::string>;

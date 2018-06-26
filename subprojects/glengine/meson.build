@@ -10,8 +10,10 @@ vksdk_path = run_command('./getVulkanSDK.sh').stdout().strip()
 vulkan_hppInc = include_directories(vksdk_path + '/include')
 vulkanLib = compiler.find_library('vulkan')
 
-glengineLib = static_library('glengine',
-    ['Geometry.cpp', 'Shader.cpp', 'Pipeline.cpp', 'Logger.cpp', 'Renderer.cpp', 'VulkanRendererBoilerplate.cpp'],
+srcList = ['Geometry.cpp', 'Shader.cpp', 'Pipeline.cpp', 'Logger.cpp', 'Renderer.cpp', 'VulkanRendererBoilerplate.cpp']
+enumMaps = ['Pipeline.hpp-enummap.cpp']
+
+glengineLib = static_library('glengine', srcList + enumMaps,
     dependencies: [sdl2, dl, vulkanLib],
     include_directories: [vulkan_hppInc, entt]
     )

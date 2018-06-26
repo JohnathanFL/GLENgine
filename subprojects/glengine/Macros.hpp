@@ -31,22 +31,19 @@
    REF_SETTER(TYPE, VARNAME, FUNC_NAME)
 
 
-#define GENERATE_ENUM_STREAM_OPS(ENUMNAME, ENUMMAPPINGS)                      \
-   inline std::ostream& operator<<(std::ostream& out, const ENUMNAME& from) { \
-      out << ENUMMAPPINGS.at(from);                                           \
-                                                                              \
-      return out;                                                             \
-   }                                                                          \
-                                                                              \
-   inline std::istream& operator>>(std::istream& in, ENUMNAME& to) {          \
-      std::string buff;                                                       \
-      in >> buff;                                                             \
-      for (const auto& pairing : ENUMMAPPINGS)                                \
-         if (pairing.second == buff)                                          \
-            to = pairing.first;                                               \
-                                                                              \
-                                                                              \
-      return in;                                                              \
+#define STRINGIFY __attribute__((annotate("Stringify")))
+
+// So we can specialize and not need overload on return type stuff
+template <typename T>
+inline T from_string(const std::string& in);
+
+#define GENERATE_ENUM_CONV_OPS(ENUMNAME, ENUMMAPPINGS)                                         \
+   inline const std::string& to_string(const ENUMNAME& from) { return ENUMMAPPINGS.at(from); } \
+   template <>                                                                                 \
+   inline ENUMNAME from_string<ENUMNAME>(const std::string& in) {                              \
+      for (const auto& pairing : ENUMMAPPINGS)                                                 \
+         if (pairing.second == in)                                                             \
+            return pairing.first;                                                              \
    }
 
 //==========================================================================

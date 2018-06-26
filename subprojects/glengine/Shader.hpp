@@ -1,7 +1,7 @@
 #pragma once
-#include "Types.hpp"
+#include <vulkan/vulkan.hpp>
 
-#include "Renderer.hpp"
+#include "Macros.hpp"
 
 // General idea: internal:: will contain the actual objects, namespace :: will contain wrappers that index into the
 // renderer's pools, to maintain better locality. We won't use pointers in the wrappers since we can't be sure that

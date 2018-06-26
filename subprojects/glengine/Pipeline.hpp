@@ -11,7 +11,7 @@
 
 // I'm remaking all these enums instead of using vulkan-hpp versions because I won't be using the 'e' prefixing in my
 // code, and so want to stay consistent.
-enum class Topology : VkFlags {
+enum class STRINGIFY Topology : VkFlags {
    Points            = VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
    Lines             = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
    LineStrips        = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
@@ -25,37 +25,15 @@ enum class Topology : VkFlags {
    PatchList         = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
 };
 
-static const std::unordered_map<Topology, std::string> TopologyMappings = {
-    {Topology::Points, "Points"},
-    {Topology::Lines, "Lines"},
-    {Topology::LineStrips, "LineStrips"},
-    {Topology::Triangles, "Triangles"},
-    {Topology::TriangleStrips, "TriangleStrips"},
-    {Topology::TriangleFans, "TriangleFans"},
-    {Topology::LinesAdj, "LinesAdj"},
-    {Topology::LineStripsAdj, "LineStripsAdj"},
-    {Topology::TrianglesAdj, "TrianglesAdj"},
-    {Topology::TriangleStripsAdj, "TriangleStripsAdj"},
-    {Topology::PatchList, "PatchList"},
-
-};
-GENERATE_ENUM_STREAM_OPS(Topology, TopologyMappings)
-
-enum class FillMode : VkFlags {
+enum class STRINGIFY FillMode : VkFlags {
    Fill        = VK_POLYGON_MODE_FILL,
    Line        = VK_POLYGON_MODE_LINE,
    Point       = VK_POLYGON_MODE_POINT,
    RectangleNV = VK_POLYGON_MODE_FILL_RECTANGLE_NV,
 };
 
-static const std::unordered_map<FillMode, std::string> FillModeMappings{{FillMode::Fill, "Fill"},
-                                                                        {FillMode::Line, "Line"},
-                                                                        {FillMode::Point, "Point"},
-                                                                        {FillMode::RectangleNV, "RectangleNV"}};
-GENERATE_ENUM_STREAM_OPS(FillMode, FillModeMappings)
 
-
-enum class CullMode : VkFlags {
+enum class STRINGIFY CullMode : VkFlags {
    None  = VK_CULL_MODE_NONE,
    Front = VK_CULL_MODE_FRONT_BIT,
    Back  = VK_CULL_MODE_BACK_BIT,
@@ -63,9 +41,33 @@ enum class CullMode : VkFlags {
 };
 
 // Back to Physics, baby
-enum class FrontFaceRule : VkFlags {
-   RightHand = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-   LeftHand  = VK_FRONT_FACE_CLOCKWISE,
+enum class FrontFaceRule : VkFlags STRINGIFY{
+    RightHand = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+    LeftHand  = VK_FRONT_FACE_CLOCKWISE,
+};
+
+
+enum class STRINGIFY CompareOp {
+   Never          = VK_COMPARE_OP_NEVER,
+   Less           = VK_COMPARE_OP_LESS,
+   Equal          = VK_COMPARE_OP_EQUAL,
+   LessOrEqual    = VK_COMPARE_OP_LESS_OR_EQUAL,
+   Greater        = VK_COMPARE_OP_GREATER,
+   NotEqual       = VK_COMPARE_OP_NOT_EQUAL,
+   GreaterOrEqual = VK_COMPARE_OP_GREATER_OR_EQUAL,
+   Always         = VK_COMPARE_OP_ALWAYS
+};
+
+
+enum class STRINGIFY StencilOp {
+   Keep              = VK_STENCIL_OP_KEEP,
+   Zero              = VK_STENCIL_OP_ZERO,
+   Replace           = VK_STENCIL_OP_REPLACE,
+   IncrementAndClamp = VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+   DecrementAndClamp = VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+   Invert            = VK_STENCIL_OP_INVERT,
+   IncrementAndWrap  = VK_STENCIL_OP_INCREMENT_AND_WRAP,
+   DecrementAndWrap  = VK_STENCIL_OP_DECREMENT_AND_WRAP
 };
 
 using MultisampleCount = vk::SampleCountFlagBits;
@@ -112,20 +114,26 @@ struct GraphicsPipeline {
 
    MultisampleCount     msaaCount;
    std::optional<float> minSampleShading;
-   vk::SampleMask       sampleMask;
+   uint32               sampleMask;
    bool                 enableAlphaCoverage, enableAlphaToOne;
 
 
-   vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+   bool               enableDepthTest, enableDepthWrite, enableDepthBoundsTest;
+   CompareOp          compOp;
+   bool               enableStencilTest;
+   vk::StencilOpState front, back;
+   float              minDepth, maxDepth;
 
 
-   vk::PipelineColorBlendStateCreateInfo colorBlendState;
-   vk::PipelineDynamicStateCreateInfo    dynState;
-   vk::PipelineLayout                    layout;
-   vk::RenderPass                        renderPass;
-   uint32                                subpassIndex;
-   vk::Pipeline                          basePipeline;
-   int32                                 basePipelineIndex;
+   bool enable;
+
+
+   vk::PipelineDynamicStateCreateInfo dynState;
+   vk::PipelineLayout                 layout;
+   vk::RenderPass                     renderPass;
+   uint32                             subpassIndex;
+   vk::Pipeline                       basePipeline;
+   int32                              basePipelineIndex;
 
    CONVERTABLE_TO_MEMBER(pipe)
    REF_SETTER(shaderStages, ShaderStages)
