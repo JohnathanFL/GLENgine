@@ -1,0 +1,3 @@
+[submodule "subprojects/glengine/subprojects/enummap"]
+	path = subprojects/glengine/subprojects/enummap
+	url = git@github.com:JohnathanFL/enummap.git
