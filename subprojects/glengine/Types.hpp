@@ -1,17 +1,17 @@
 #pragma once
+#include <functional>
 #include <unordered_map>
 
 #include <stdint.h>
-#define NO_T(TYPE) using TYPE = TYPE##_t;
-#define STRIP_WITH_U_T(TYPE) \
-   NO_T(TYPE);               \
-   NO_T(u##TYPE);
+#define STRIP_T(TYPE)        \
+   using TYPE    = TYPE##_t; \
+   using u##TYPE = u##TYPE##_t;
 
 // uint8, int64, etc
-STRIP_WITH_U_T(int8);
-STRIP_WITH_U_T(int16);
-STRIP_WITH_U_T(int32);
-STRIP_WITH_U_T(int64);
+STRIP_T(int8)
+STRIP_T(int16)
+STRIP_T(int32)
+STRIP_T(int64)
 
 
 using sbyte = char;  // <S>igned byte

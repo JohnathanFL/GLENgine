@@ -31,12 +31,6 @@
    REF_SETTER(TYPE, VARNAME, FUNC_NAME)
 
 
-#define STRINGIFY __attribute__((annotate("Stringify")))
-
-// So we can specialize and not need overload on return type stuff
-template <typename T>
-inline T from_string(const std::string& in);
-
 #define GENERATE_ENUM_CONV_OPS(ENUMNAME, ENUMMAPPINGS)                                         \
    inline const std::string& to_string(const ENUMNAME& from) { return ENUMMAPPINGS.at(from); } \
    template <>                                                                                 \

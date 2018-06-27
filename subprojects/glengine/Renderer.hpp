@@ -24,13 +24,6 @@
 
 #include "Shader.hpp"
 
-
-// Basic idea currently looks like this: A variable number of command buffer pairs. While 1 element is written to in
-// another thread, the other is being drawn. Ideas for separate pairs: 1 pair for voxel terrain, 1 pair for entities, 1
-// pair for completely static geometry, etc
-// Possibly reserve cmdBuffs[0..1] for default static/dynamic geometry stuff (normal addGeom or other such func, rather
-// than an addCustomGeom)
-
 // Current plan: Other than sprites and the like, everything will be treated as a Voxel volume, using either compute
 // shaders, geometry shaders, or some combination of the two to make the meshes
 // (Could use geom shaders to make a temp mesh, then swap to a compute-generated mesh when ready)

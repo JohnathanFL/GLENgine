@@ -20,6 +20,7 @@ build/meson-logs
 subprojects/glengine/subprojects/entt/src/entt/core
 build/glengine
 subprojects/glengine/subprojects/entt/src/entt/locator
+subprojects/glengine/subprojects/enummap
 subprojects/glengine/subprojects/entt/cmake/in
 subprojects/glengine/subprojects/entt/test
 subprojects/glengine/subprojects/entt/test/entt/entity

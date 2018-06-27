@@ -9,6 +9,8 @@
 
 #include "Shader.hpp"
 
+#include <EnumMap.hpp>
+
 // I'm remaking all these enums instead of using vulkan-hpp versions because I won't be using the 'e' prefixing in my
 // code, and so want to stay consistent.
 enum class STRINGIFY Topology : VkFlags {
@@ -86,6 +88,11 @@ struct DepthBias {
    float slopeFactor;
 };
 
+struct VertexBufferDescription {
+   vk::VertexInputBindingDescription*   bindingDesc;
+   vk::VertexInputAttributeDescription* attribs;
+};
+
 // Todo: ComputePipeline; Better encapsulation
 struct GraphicsPipeline {
    vk::Pipeline pipe;
@@ -93,8 +100,7 @@ struct GraphicsPipeline {
    vk::PipelineCreateFlags flags;
    std::vector<Shader>     shaderStages;
 
-   std::vector<vk::VertexInputAttributeDescription> inputAttributes;
-   std::vector<vk::VertexInputBindingDescription>   inputBindings;
+   std::vector<VertexBufferDescription> inputDescs_;
 
    Topology              topology;
    std::optional<uint32> pointsPerPatch;

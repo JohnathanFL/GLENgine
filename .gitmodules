@@ -1,3 +1,3 @@
-[submodule "subprojects/glengine/subprojects/--force"]
-	path = subprojects/glengine/subprojects/--force
+[submodule "subprojects/glengine/subprojects/enummap"]
+	path = subprojects/glengine/subprojects/enummap
 	url = https://github.com/JohnathanFL/enummap
