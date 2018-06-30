@@ -23,5 +23,4 @@ Basic usage: You send a Geometry object and a ShaderProgram to the renderer to d
 The vertex buffer is a GPUBuffer with GPUBuffer::Type::Vertex.
 GPUBuffers are basically a thin wrapping over a normal buffer WITH reference counting (based on their OpenGL handles).
 
-
-All Object::Type enums (+GPUBuffer::Storage) are thin wrappers over the appropriate GL_ constants.
+Designed as a Voxel based engine
