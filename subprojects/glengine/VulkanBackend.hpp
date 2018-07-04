@@ -6,6 +6,7 @@
 
 #include "Macros.hpp"
 
+#include "Pipeline.hpp"
 #include "Shader.hpp"
 
 struct QueueIndices {
@@ -83,9 +84,7 @@ class VulkanBackend : RenderingBackend {
    std::vector<vk::Image>     swapImages;
    std::vector<vk::ImageView> swapViews;
 
-   vk::RenderPass     renderPass;
-   vk::Pipeline       pipeline;
-   vk::PipelineLayout pipeLayout;
+   std::shared_ptr<GraphicsPipeline> pipe;
 
    std::vector<vk::UniqueFramebuffer> swapFramebuffers;
 

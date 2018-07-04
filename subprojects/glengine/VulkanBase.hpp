@@ -12,3 +12,7 @@ struct VulkanObject {
    VulkanObject() : dev{NullDevice} {}
    VulkanObject(vk::Device& device) : dev{device} {}
 };
+
+#define DEFAULT_VULKANOBJECT_CTOR(TYPE) \
+                                        \
+   TYPE(vk::Device dev) : VulkanObject(dev) {}

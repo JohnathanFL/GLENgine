@@ -1,79 +1,25 @@
 #pragma once
 #include <iostream>
 #include <optional>
+#include <typeindex>
 #include <unordered_map>
 
 #include <vulkan/vulkan.hpp>
 
+#include <glm/glm.hpp>
+
 #include "Macros.hpp"
 
 #include "Shader.hpp"
+#include "VulkanBase.hpp"
 
 #include <EnumMap.hpp>
 
-// I'm remaking all these enums instead of using vulkan-hpp versions because I won't be using the 'e' prefixing in my
-// code, and so want to stay consistent.
-enum class STRINGIFY Topology : VkFlags {
-   Points            = VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-   Lines             = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-   LineStrips        = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
-   Triangles         = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-   TriangleStrips    = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-   TriangleFans      = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
-   LinesAdj          = VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
-   LineStripsAdj     = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
-   TrianglesAdj      = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
-   TriangleStripsAdj = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
-   PatchList         = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
-};
+#include "PipelineEnums.hpp"
 
-enum class STRINGIFY FillMode : VkFlags {
-   Fill        = VK_POLYGON_MODE_FILL,
-   Line        = VK_POLYGON_MODE_LINE,
-   Point       = VK_POLYGON_MODE_POINT,
-   RectangleNV = VK_POLYGON_MODE_FILL_RECTANGLE_NV,
-};
-
-
-enum class STRINGIFY CullMode : VkFlags {
-   None  = VK_CULL_MODE_NONE,
-   Front = VK_CULL_MODE_FRONT_BIT,
-   Back  = VK_CULL_MODE_BACK_BIT,
-   Both  = VK_CULL_MODE_FRONT_AND_BACK,
-};
-
-// Back to Physics, baby
-enum class FrontFaceRule : VkFlags STRINGIFY{
-    RightHand = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-    LeftHand  = VK_FRONT_FACE_CLOCKWISE,
-};
-
-
-enum class STRINGIFY CompareOp {
-   Never          = VK_COMPARE_OP_NEVER,
-   Less           = VK_COMPARE_OP_LESS,
-   Equal          = VK_COMPARE_OP_EQUAL,
-   LessOrEqual    = VK_COMPARE_OP_LESS_OR_EQUAL,
-   Greater        = VK_COMPARE_OP_GREATER,
-   NotEqual       = VK_COMPARE_OP_NOT_EQUAL,
-   GreaterOrEqual = VK_COMPARE_OP_GREATER_OR_EQUAL,
-   Always         = VK_COMPARE_OP_ALWAYS
-};
-
-
-enum class STRINGIFY StencilOp {
-   Keep              = VK_STENCIL_OP_KEEP,
-   Zero              = VK_STENCIL_OP_ZERO,
-   Replace           = VK_STENCIL_OP_REPLACE,
-   IncrementAndClamp = VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-   DecrementAndClamp = VK_STENCIL_OP_DECREMENT_AND_CLAMP,
-   Invert            = VK_STENCIL_OP_INVERT,
-   IncrementAndWrap  = VK_STENCIL_OP_INCREMENT_AND_WRAP,
-   DecrementAndWrap  = VK_STENCIL_OP_DECREMENT_AND_WRAP
-};
 
 using MultisampleCount = vk::SampleCountFlagBits;
-inline MultisampleCount MultiSample(uint8 count) {
+constexpr MultisampleCount MultiSample(uint8 count) {
    // Thanks to https://stackoverflow.com/questions/600293/how-to-check-if-a-number-is-a-power-of-2#600306 for the
    // elegant solution
    if (count != 0 && !(count & (count - 1)))  // Is a power of 2
@@ -87,63 +33,336 @@ struct DepthBias {
    float clamp;
    float slopeFactor;
 };
+struct DepthTest {
+   bool      writeEnable;
+   CompareOp compareOp;
+   bool      boundsTest;
+};
+struct StencilTest {
+   StencilOp front;
+   StencilOp back;
+};
 
 struct VertexBufferDescription {
    vk::VertexInputBindingDescription*   bindingDesc;
    vk::VertexInputAttributeDescription* attribs;
 };
 
+
+const std::unordered_map<std::type_index, vk::Format> TypeToVkFormat = {
+    {typeindex(glm::vec3), vk::Format::eR32G32B32Sfloat},
+    {typeindex(glm::vec2), vk::Format::eR32G32Sfloat},
+    {typeindex(glm::vec1), vk::Format::eR32Sfloat}};
+
+// For example: ... = VertexInputAttribsBuilder().then<glm::vec3>().then<glm::vec3>().build();
+class VertexDescBuilder {
+  public:
+   // Thou shalt not store this object
+   explicit VertexDescBuilder(uint32 buffBinding = 0, bool perInstance = false) {
+      this->buffBinding = buffBinding;
+      this->perInstance = perInstance;
+      curOffset = curLoc = 0;
+   }
+   VertexDescBuilder(const VertexDescBuilder& other)  = delete;
+   VertexDescBuilder(const VertexDescBuilder&& other) = delete;
+   template <typename T>
+   VertexDescBuilder& then(uint32 dataFrom = 0) {
+      descs.push_back(vk::VertexInputAttributeDescription()
+                          .setLocation(curLoc)
+                          .setBinding(dataFrom)
+                          .setFormat(TypeToVkFormat.at(typeindex(T)))
+                          .setOffset(curOffset));
+      curLoc++;
+      curOffset += sizeof(T);
+   }
+
+   inline std::pair<vk::VertexInputBindingDescription, std::vector<vk::VertexInputAttributeDescription>> build() {
+      return {vk::VertexInputBindingDescription()
+                  .setBinding(buffBinding)
+                  .setInputRate(perInstance ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex)
+                  .setStride(curOffset),  // Cur offset after vec3,vec3,vec3 would already be 36, for ex
+              descs};
+   }
+
+  private:
+   uint32 buffBinding;
+   bool   perInstance;
+
+   size_t                                           curOffset;
+   uint32                                           curLoc;
+   std::vector<vk::VertexInputAttributeDescription> descs;
+};
+
+struct PipelineLayout : VulkanObject {
+   DEFAULT_VULKANOBJECT_CTOR(PipelineLayout)
+
+   vk::UniquePipelineLayout layout = vk::UniquePipelineLayout(nullptr);
+   CONVERTABLE_TO_MEMBER(layout)
+   inline operator bool() { return layout.operator bool(); }
+
+   inline void build() {
+      auto createInfo = vk::PipelineLayoutCreateInfo()
+                            .setSetLayoutCount(setLayouts.size())
+                            .setPSetLayouts(setLayouts.data())
+                            .setPushConstantRangeCount(pushConstRanges.size())
+                            .setPPushConstantRanges(pushConstRanges.data());
+      layout = dev.createPipelineLayoutUnique(createInfo);
+   }
+
+   std::vector<vk::DescriptorSetLayout> setLayouts;
+   std::vector<vk::PushConstantRange>   pushConstRanges;
+};
+
+struct RenderPass : VulkanObject {
+   DEFAULT_VULKANOBJECT_CTOR(RenderPass)
+
+   vk::UniqueRenderPass pass;
+   CONVERTABLE_TO_MEMBER(pass)
+
+   inline void build() {
+      vk::SubpassDescription* descs;
+      vk::SubpassDependency*  deps;
+      std::tie(descs, deps) = subpasses.data();
+
+      auto createInfo = vk::RenderPassCreateInfo()
+                            .setAttachmentCount(attachDescs.size())
+                            .setPAttachments(attachDescs.data())
+                            .setSubpassCount(subpasses.size())
+                            .setPSubpasses(descs)
+                            .setPDependencies(deps);
+      pass = dev.createRenderPassUnique(createInfo);
+   }
+   inline operator bool() { return pass.operator bool(); }
+
+   std::vector<vk::AttachmentDescription>                 attachDescs;
+   NVector<vk::SubpassDescription, vk::SubpassDependency> subpasses;
+};
+
 // Todo: ComputePipeline; Better encapsulation
-struct GraphicsPipeline {
-   vk::Pipeline pipe;
+class GraphicsPipeline : VulkanObject {
+  protected:
+   GraphicsPipeline(vk::Device dev) : VulkanObject(dev) {}
 
-   vk::PipelineCreateFlags flags;
-   std::vector<Shader>     shaderStages;
+  public:
+   friend class std::shared_ptr<GraphicsPipeline>;  // Since this has so much stuff and should rarely be remade, force
+                                                    // us to use a shared_ptr to access it.
 
-   std::vector<VertexBufferDescription> inputDescs_;
+   vk::UniquePipeline pipe;
 
-   Topology              topology;
-   std::optional<uint32> pointsPerPatch;
+   vk::PipelineCreateFlags                        flags;
+   std::vector<vk::PipelineShaderStageCreateInfo> stages;
 
-   // Viewport + Scissor
-   std::vector<std::pair<vk::Viewport, vk::Rect2D>> viewPorts;
+   std::vector<vk::VertexInputAttributeDescription> inputAttribDescs;  // Per vertex
+   std::vector<vk::VertexInputBindingDescription>   inputBindDescs;    // Per buffer
 
+   vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;  // see setTopology and setPrimRestart
+   vk::PipelineTessellationStateCreateInfo  tessellationState;
 
-   // Would be nice to have C# style properties, so I could just delegate all these to their create infos
-   FillMode                 fillMode;
-   bool                     enableDepthClamp, discardRaster;
-   CullMode                 cullMode;
-   FrontFaceRule            faceRule;
-   std::optional<DepthBias> depthBias;
-   float                    lineWidth;
+   std::vector<vk::Viewport> viewports;
+   std::vector<vk::Rect2D>   viewScissors;
 
+   vk::PipelineRasterizationStateCreateInfo rasterizationState;
+   vk::PipelineMultisampleStateCreateInfo   multisampleState;
+   vk::PipelineDepthStencilStateCreateInfo  depthStencilState;
 
-   MultisampleCount     msaaCount;
-   std::optional<float> minSampleShading;
-   uint32               sampleMask;
-   bool                 enableAlphaCoverage, enableAlphaToOne;
+   std::optional<LogicOp>                             colorBlendLogicOp;
+   std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;
+   glm::vec4                                          colorBlendConstants;
 
+   // Skipping dynamic states for now
 
-   bool               enableDepthTest, enableDepthWrite, enableDepthBoundsTest;
-   CompareOp          compOp;
-   bool               enableStencilTest;
-   vk::StencilOpState front, back;
-   float              minDepth, maxDepth;
+   SharedPtr<PipelineLayout>   layout;
+   SharedPtr<RenderPass>       renderPass;
+   uint32_t                    subpassIndex;
+   SharedPtr<GraphicsPipeline> basePipeline;
+   int32_t                     basePipelineIndex;
 
+   // I pity the fool who has to read this, but that's just what the vk pipeline is like.
+   inline GraphicsPipeline& setFlags(vk::PipelineCreateFlags fl);
+   inline GraphicsPipeline& clearStages();
+   template <typename... Args>
+   inline GraphicsPipeline& withStages(const Args&... shaders);
+   inline GraphicsPipeline& setTopology(const Topology& top);
+   inline GraphicsPipeline& setPrimitiveRestart(bool v);
+   inline GraphicsPipeline& withAttribs(std::vector<vk::VertexInputAttributeDescription>&& attribs);
+   inline GraphicsPipeline& setPatchControlPoints(uint32 p);
+   inline GraphicsPipeline& addViewport(vk::Viewport view, vk::Rect2D scissor);
+   inline GraphicsPipeline& enableDepthClamp(bool enable = true);
+   inline GraphicsPipeline& setfillMode(const FillMode& mode);
+   inline GraphicsPipeline& setCullMode(const CullMode& mode);
+   inline GraphicsPipeline& setFrontFaceRule(const FrontFaceRule& rule);
+   inline GraphicsPipeline& withDepthBias(std::optional<DepthBias> bias);
+   inline GraphicsPipeline& setLineWidth(float width);
+   inline GraphicsPipeline& setMSAA(uint32 samples);
+   inline GraphicsPipeline& withDepthTest(std::optional<DepthTest> test);
+   inline GraphicsPipeline& withStencilTest(std::optional<StencilTest> test);
+   inline GraphicsPipeline& withDepthBounds(glm::vec2&& bounds);
+   inline GraphicsPipeline& withColorBlendOp(std::optional<LogicOp> op);
+   template <typename... Args>
+   inline GraphicsPipeline& addColorBlendAttachments(const Args&... args);
+   inline GraphicsPipeline& setBlendConstants(const glm::vec4& consts);
+   inline GraphicsPipeline& setLayout(SharedPtr<PipelineLayout> layout);
+   inline GraphicsPipeline& setRenderPass(SharedPtr<RenderPass> pass, uint32 subpass);
+   inline GraphicsPipeline& setBasePipeline(SharedPtr<GraphicsPipeline> base);
+   inline GraphicsPipeline& setBasePipelineIndex(uint32 i);
 
-   bool enable;
-
-
-   vk::PipelineDynamicStateCreateInfo dynState;
-   vk::PipelineLayout                 layout;
-   vk::RenderPass                     renderPass;
-   uint32                             subpassIndex;
-   vk::Pipeline                       basePipeline;
-   int32                              basePipelineIndex;
+   // TODO: sample shading params
 
    CONVERTABLE_TO_MEMBER(pipe)
-   REF_SETTER(shaderStages, ShaderStages)
+
 
    // TODO: Probably load from a TOML file, using cpptoml
    // static GraphicsPipeline FromSrc(const TODO& src);
 };
+
+
+GraphicsPipeline& GraphicsPipeline::setFlags(vk::PipelineCreateFlags fl) {
+   flags = fl;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::clearStages() {
+   stages.clear();
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setTopology(const Topology& top) {
+   inputAssemblyState.topology = vk::PrimitiveTopology(top);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setPrimitiveRestart(bool v) {
+   inputAssemblyState.primitiveRestartEnable = v;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::withAttribs(std::vector<vk::VertexInputAttributeDescription>&& attribs) {
+   inputAttribDescs = attribs;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setPatchControlPoints(uint32 p) {
+   tessellationState.patchControlPoints = p;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::addViewport(vk::Viewport view, vk::Rect2D scissor) {
+   viewports.push_back(view);
+   viewScissors.push_back(scissor);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::enableDepthClamp(bool enable) {
+   rasterizationState.depthClampEnable = enable;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setfillMode(const FillMode& mode) {
+   rasterizationState.polygonMode = vk::PolygonMode(mode);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setCullMode(const CullMode& mode) {
+   rasterizationState.cullMode = vk::CullModeFlagBits(mode);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setFrontFaceRule(const FrontFaceRule& rule) {
+   rasterizationState.frontFace = vk::FrontFace(rule);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::withDepthBias(std::optional<DepthBias> bias) {
+   if (bias.has_value())
+      rasterizationState.setDepthBiasEnable(true)
+          .setDepthBiasClamp(bias->clamp)
+          .setDepthBiasConstantFactor(bias->constantFactor)
+          .setDepthBiasSlopeFactor(bias->slopeFactor);
+   else
+      rasterizationState.setDepthBiasEnable(false);
+
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setLineWidth(float width) {
+   rasterizationState.lineWidth = width;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setMSAA(uint32 samples) {
+   multisampleState.setRasterizationSamples(MultiSample(samples));
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::withDepthTest(std::optional<DepthTest> test) {
+   if (test.has_value())
+      depthStencilState.setDepthTestEnable(true)
+          .setDepthBoundsTestEnable(test->boundsTest)
+          .setDepthCompareOp(vk::CompareOp(test->compareOp))
+          .setDepthWriteEnable(test->writeEnable);
+   else
+      depthStencilState.setDepthTestEnable(false);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::withStencilTest(std::optional<StencilTest> test) {
+   if (test.has_value())
+      depthStencilState.setStencilTestEnable(true)
+          .setFront(vk::StencilOp(test->front))
+          .setBack(vk::StencilOp(test->back));
+   else
+      depthStencilState.setStencilTestEnable(false);
+
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::withDepthBounds(glm::vec2&& bounds) {  // using {min, max}
+   depthStencilState.setMinDepthBounds(bounds.x).setMaxDepthBounds(bounds.y);
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::withColorBlendOp(std::optional<LogicOp> op) {
+   colorBlendLogicOp = op;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setBlendConstants(const glm::vec4& consts) {
+   colorBlendConstants = consts;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setLayout(SharedPtr<PipelineLayout> layout) {
+   this->layout = layout;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setRenderPass(SharedPtr<RenderPass> pass, uint32 subpass) {
+   renderPass   = pass;
+   subpassIndex = subpass;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setBasePipeline(SharedPtr<GraphicsPipeline> base) {
+   basePipeline = base;
+   return *this;
+}
+
+GraphicsPipeline& GraphicsPipeline::setBasePipelineIndex(uint32 i) {
+   basePipelineIndex = i;
+   return *this;
+}
+template <typename... Args>
+inline GraphicsPipeline& GraphicsPipeline::withStages(const Args&... shaders) {
+   for (const Shader& shader : {shaders...})
+      stages.push_back(shader.toPipelineCreateInfo());
+
+   return *this;
+}
+
+template <typename... Args>
+inline GraphicsPipeline& GraphicsPipeline::addColorBlendAttachments(const Args&... args) {
+   for (const vk::PipelineColorBlendAttachmentState& state : {args...})
+      colorBlendAttachments.push_back(state);
+}
+
+enum class STRINGIFY PipelineType { Graphics, Compute };

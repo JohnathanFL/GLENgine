@@ -19,7 +19,7 @@ enummap = generator(enummap_script,
                 output: '@BASENAME@-enummap.cpp',
                 arguments: ['@INPUT@', '@OUTPUT@', includeDirs])
 
-enumMaps = enummap.process('Pipeline.hpp')
+enumMaps = enummap.process('PipelineEnums.hpp')
 enumMapInc = include_directories('subprojects/enummap')
 
 srcList = ['Geometry.cpp', 'Shader.cpp', 'Pipeline.cpp', 'Logger.cpp', 'Renderer.cpp', 'VulkanBackend.cpp']

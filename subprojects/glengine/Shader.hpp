@@ -36,7 +36,7 @@ struct Shader {
       return Shader{dev, dev.createShaderModule(createInfo), stage};
    }
 
-   vk::PipelineShaderStageCreateInfo toPipelineCreateInfo() {
+   vk::PipelineShaderStageCreateInfo toPipelineCreateInfo() const {
       return vk::PipelineShaderStageCreateInfo()
           .setStage(vk::ShaderStageFlagBits(stage))
           .setModule(shaderMod)
@@ -48,7 +48,6 @@ struct Shader {
    CONVERTABLE_TO_MEMBER(shaderMod)
 };
 
-struct ShaderProgram {};
 
 struct Geometry {};
 

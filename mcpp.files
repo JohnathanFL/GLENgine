@@ -23,6 +23,7 @@ subprojects/glengine/Pipeline.cpp
 subprojects/glengine/Pipeline.hpp
 subprojects/glengine/Pipeline.hpp
 subprojects/glengine/Pipeline.hpp
+subprojects/glengine/PipelineEnums.hpp
 subprojects/glengine/Renderer.cpp
 subprojects/glengine/Renderer.cpp
 subprojects/glengine/Renderer.hpp

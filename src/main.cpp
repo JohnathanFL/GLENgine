@@ -9,22 +9,6 @@
 
 using namespace std;
 
-std::string loadFile(const std::string& fileName) {
-   char*  buff;
-   size_t size;
-   FILE*  file = fopen(fileName.c_str(), "r");
-   fseek(file, 0, SEEK_END);
-   size = ftell(file);
-   fseek(file, 0, SEEK_SET);
-
-   buff = (char*)malloc(size + 1);
-   memset(buff, '\0', size + 1);
-
-   fread(buff, size, 1, file);
-   fclose(file);
-
-   return std::string(buff);
-}
 
 struct Vert {
    glm::vec3 pos;
