@@ -97,7 +97,13 @@ struct PipelineLayout : VulkanObject {
    DEFAULT_VULKANOBJECT_CTOR(PipelineLayout)
 
    vk::UniquePipelineLayout layout = vk::UniquePipelineLayout(nullptr);
-   CONVERTABLE_TO_MEMBER(layout)
+
+   operator vk::PipelineLayout() {
+      if (!layout)
+         build();
+
+      return layout.get();
+   }
    inline operator bool() { return layout.operator bool(); }
 
    inline void build() {
@@ -113,36 +119,91 @@ struct PipelineLayout : VulkanObject {
    std::vector<vk::PushConstantRange>   pushConstRanges;
 };
 
-struct RenderPass : VulkanObject {
-   DEFAULT_VULKANOBJECT_CTOR(RenderPass)
+struct SubpassDescription {
+   vk::SubpassDescriptionFlagBits       flags;
+   vk::PipelineBindPoint                pipelineBindPoint;
+   std::vector<vk::AttachmentReference> inputAttachments;
 
-   vk::UniqueRenderPass pass;
-   CONVERTABLE_TO_MEMBER(pass)
+
+   std::vector<vk::AttachmentReference>                colorAttachments;
+   std::optional<std::vector<vk::AttachmentReference>> resolveAttachments;
+
+   std::optional<vk::AttachmentReference> depthStencilAttachment;
+
+   std::vector<uint32> preserveAttachments;
+
+   operator vk::SubpassDescription() const {
+      return vk::SubpassDescription()
+          .setColorAttachmentCount(colorAttachments.size())
+          .setPColorAttachments(colorAttachments.data())
+          .setPResolveAttachments(resolveAttachments ? resolveAttachments->data() : nullptr)
+          .setFlags(flags)
+          .setPipelineBindPoint(pipelineBindPoint)
+          .setInputAttachmentCount(inputAttachments.size())
+          .setPInputAttachments(inputAttachments.data())
+          .setPDepthStencilAttachment(depthStencilAttachment ? &depthStencilAttachment.value() : nullptr)
+          .setPreserveAttachmentCount(preserveAttachments.size())
+          .setPPreserveAttachments(preserveAttachments.data());
+      // Phew. I'd kill for C11 intializers
+   }
+};
+
+class RenderPass : VulkanObject {
+   RenderPass(vk::Device dev) : VulkanObject(dev), pass{nullptr} {}
+
+  public:
+   friend class std::shared_ptr<RenderPass>;
 
    inline void build() {
-      vk::SubpassDescription* descs;
-      vk::SubpassDependency*  deps;
-      std::tie(descs, deps) = subpasses.data();
+      std::vector<vk::SubpassDescription> realSubpassDescs;
+      for (const auto& el : subpassDescs)
+         realSubpassDescs.push_back(el);  // see operator in Subpass
 
       auto createInfo = vk::RenderPassCreateInfo()
                             .setAttachmentCount(attachDescs.size())
                             .setPAttachments(attachDescs.data())
-                            .setSubpassCount(subpasses.size())
-                            .setPSubpasses(descs)
-                            .setPDependencies(deps);
+                            // Note that we are using REALSubpassDescs, NOT this->subpassDescs
+                            .setSubpassCount(realSubpassDescs.size())
+                            .setPSubpasses(realSubpassDescs.data())
+                            .setDependencyCount(subpassDeps.size())
+                            .setPDependencies(subpassDeps.data());
       pass = dev.createRenderPassUnique(createInfo);
    }
    inline operator bool() { return pass.operator bool(); }
 
-   std::vector<vk::AttachmentDescription>                 attachDescs;
-   NVector<vk::SubpassDescription, vk::SubpassDependency> subpasses;
+   inline RenderPass& addAttachment(const vk::AttachmentDescription& desc) {
+      attachDescs.push_back(desc);
+      return *this;
+   }
+   inline RenderPass& addPass(const SubpassDescription& desc) {
+      subpassDescs.push_back(desc);
+      return *this;
+   }
+   inline RenderPass& addDep(const vk::SubpassDependency& dep) {
+      subpassDeps.push_back(dep);
+      return *this;
+   }
+
+
+   vk::UniqueRenderPass pass;
+
+   operator vk::RenderPass() {
+      if (!pass)
+         build();
+
+      return pass.get();
+   }
+   
+   std::vector<vk::AttachmentDescription> attachDescs;
+   std::vector<SubpassDescription>        subpassDescs;
+   std::vector<vk::SubpassDependency>     subpassDeps;
 };
 
 // Todo: ComputePipeline; Better encapsulation
 class GraphicsPipeline : VulkanObject {
   protected:
    GraphicsPipeline(vk::Device dev) : VulkanObject(dev) {}
-
+  
   public:
    friend class std::shared_ptr<GraphicsPipeline>;  // Since this has so much stuff and should rarely be remade, force
                                                     // us to use a shared_ptr to access it.
@@ -151,6 +212,8 @@ class GraphicsPipeline : VulkanObject {
 
    vk::PipelineCreateFlags                        flags;
    std::vector<vk::PipelineShaderStageCreateInfo> stages;
+
+   vk::PipelineVertexInputStateCreateInfo vertInputState;
 
    std::vector<vk::VertexInputAttributeDescription> inputAttribDescs;  // Per vertex
    std::vector<vk::VertexInputBindingDescription>   inputBindDescs;    // Per buffer
@@ -181,7 +244,7 @@ class GraphicsPipeline : VulkanObject {
    inline GraphicsPipeline& setFlags(vk::PipelineCreateFlags fl);
    inline GraphicsPipeline& clearStages();
    template <typename... Args>
-   inline GraphicsPipeline& withStages(const Args&... shaders);
+   inline GraphicsPipeline& addStages(const Args&... shaders);
    inline GraphicsPipeline& setTopology(const Topology& top);
    inline GraphicsPipeline& setPrimitiveRestart(bool v);
    inline GraphicsPipeline& withAttribs(std::vector<vk::VertexInputAttributeDescription>&& attribs);
@@ -206,9 +269,61 @@ class GraphicsPipeline : VulkanObject {
    inline GraphicsPipeline& setBasePipeline(SharedPtr<GraphicsPipeline> base);
    inline GraphicsPipeline& setBasePipelineIndex(uint32 i);
 
+   inline GraphicsPipeline& build() {
+      auto info = vk::GraphicsPipelineCreateInfo()
+                      .setFlags(flags)
+                      .setStageCount(stages.size())
+                      .setPStages(stages.data())
+                      .setPVertexInputState(&vertInputState)
+                      .setPInputAssemblyState(&inputAssemblyState)
+                      .setPTessellationState(&tessellationState);
+
+
+      auto viewState = vk::PipelineViewportStateCreateInfo()
+                           .setViewportCount(viewports.size())
+                           .setPViewports(viewports.data())
+                           .setScissorCount(viewScissors.size())
+                           .setPScissors(viewScissors.data());
+
+      info.setPViewportState(&viewState);
+
+
+      info.setPRasterizationState(&rasterizationState)
+          .setPMultisampleState(&multisampleState)
+          .setPDepthStencilState(&depthStencilState);
+
+      auto colorBlendState =
+          vk::PipelineColorBlendStateCreateInfo()
+              .setAttachmentCount(colorBlendAttachments.size())
+              .setPAttachments(colorBlendAttachments.data())
+              .setLogicOp(colorBlendLogicOp.has_value() ? vk::LogicOp(*colorBlendLogicOp) : vk::LogicOp::eCopy)
+              .setLogicOpEnable(colorBlendLogicOp.has_value());
+
+      std::array<float, 4> consts = {colorBlendConstants.x, colorBlendConstants.y, colorBlendConstants.z,
+                                     colorBlendConstants.w};
+      colorBlendState.setBlendConstants(consts);
+
+      info.setPColorBlendState(&colorBlendState);
+
+      info.setLayout(*layout)
+          .setRenderPass(*renderPass->pass)
+          .setSubpass(subpassIndex)
+          .setBasePipelineHandle(*basePipeline->pipe)
+          .setBasePipelineIndex(basePipelineIndex);
+
+      this->pipe = dev.createGraphicsPipelineUnique(nullptr, info);
+
+      return *this;
+   }
+
    // TODO: sample shading params
 
-   CONVERTABLE_TO_MEMBER(pipe)
+   operator vk::Pipeline() {
+       if(!pipe)
+       build();
+
+       return *pipe;
+   }
 
 
    // TODO: Probably load from a TOML file, using cpptoml
@@ -216,6 +331,7 @@ class GraphicsPipeline : VulkanObject {
 };
 
 
+#pragma region GraphicsPipelineInlines
 GraphicsPipeline& GraphicsPipeline::setFlags(vk::PipelineCreateFlags fl) {
    flags = fl;
    return *this;
@@ -364,5 +480,4 @@ inline GraphicsPipeline& GraphicsPipeline::addColorBlendAttachments(const Args&.
    for (const vk::PipelineColorBlendAttachmentState& state : {args...})
       colorBlendAttachments.push_back(state);
 }
-
-enum class STRINGIFY PipelineType { Graphics, Compute };
+#pragma endregion

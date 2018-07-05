@@ -2,14 +2,12 @@
 
 #include <set>
 
+#include "Logger.hpp"
+
 using namespace std;
 
 VulkanBackend::~VulkanBackend() {
    const auto& dev = logical;
-
-   dev->destroyPipeline(this->pipeline);
-   dev->destroyPipelineLayout(this->pipeLayout);
-   dev->destroyRenderPass(this->renderPass);
 
    dev->destroyShaderModule(this->vert);
    dev->destroyShaderModule(this->frag);
@@ -364,13 +362,13 @@ void VulkanBackend::createRenderPasses() {
                               .setInitialLayout(vk::ImageLayout::eUndefined)
                               .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
-   auto colorAttachmentRef =
-       vk::AttachmentReference().setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-   auto subpass = vk::SubpassDescription()
-                      .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-                      .setColorAttachmentCount(1)
-                      .setPColorAttachments(&colorAttachmentRef);
+   // Todo: Factorize this
+   auto subpass              = SubpassDescription();
+   subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+   subpass.colorAttachments  = {
+       vk::AttachmentReference().setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal)};
+
 
    auto dep =
        vk::SubpassDependency()
@@ -381,37 +379,34 @@ void VulkanBackend::createRenderPasses() {
            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
-   auto renderPassInfo = vk::RenderPassCreateInfo()
-                             .setAttachmentCount(1)
-                             .setPAttachments(&colorAttachDesc)
-                             .setSubpassCount(1)
-                             .setPSubpasses(&subpass)
-                             .setDependencyCount(1)
-                             .setPDependencies(&dep);
-
-   this->renderPass = this->logical->createRenderPass(renderPassInfo);
+   this->pipe->renderPass = std::make_shared<RenderPass>(this->logical);
+   this->pipe->renderPass->addPass(subpass).addDep(dep).addAttachment(colorAttachDesc).build();
 }
 
 void VulkanBackend::createGraphicsPipeline() {
+   this->pipe = std::make_shared<GraphicsPipeline>(this->logical);
+
+
    auto vertSrc = LoadFile("vert.spv");
    auto fragSrc = LoadFile("frag.spv");
 
+   // Todo: Factorize these too
    this->vert = Shader::FromSrc(vertSrc, Shader::Stage::Vertex, *this->logical);
    this->frag = Shader::FromSrc(fragSrc, Shader::Stage::Fragment, *this->logical);
 
-   vk::PipelineShaderStageCreateInfo stages[2];
+   this->pipe->addStages(this->vert, this->frag);
 
-   stages[0].setModule(this->vert).setStage(vk::ShaderStageFlagBits::eVertex).setPName("main");
-   stages[1].setModule(this->frag).setStage(vk::ShaderStageFlagBits::eFragment).setPName("main");
 
    // Todo: Find a way to force clang-format to put this stuff on multiple lines, like a sane person.
    auto vertPipelineInfo =
        vk::PipelineVertexInputStateCreateInfo().setVertexBindingDescriptionCount(0).setVertexAttributeDescriptionCount(
            0);
 
-   auto inputAsmInfo = vk::PipelineInputAssemblyStateCreateInfo()
-                           .setTopology(vk::PrimitiveTopology::eTriangleList)
-                           .setPrimitiveRestartEnable(false);
+   this->pipe.vertInputState = vertPipelineInfo;
+
+       auto inputAsmInfo = vk::PipelineInputAssemblyStateCreateInfo()
+                               .setTopology(vk::PrimitiveTopology::eTriangleList)
+                               .setPrimitiveRestartEnable(false);
 
    auto viewport = vk::Viewport()
                        .setX(0.0f)
@@ -454,26 +449,6 @@ void VulkanBackend::createGraphicsPipeline() {
            &colorBlendState);
 
    auto pipeLayoutInfo = vk::PipelineLayoutCreateInfo().setSetLayoutCount(0);
-   this->pipeLayout    = this->logical->createPipelineLayout(pipeLayoutInfo);
-
-   auto pipelineInfo = vk::GraphicsPipelineCreateInfo()
-                           .setStageCount(2)
-                           .setPStages(stages)
-                           .setPInputAssemblyState(&inputAsmInfo)
-                           .setPVertexInputState(&vertPipelineInfo)
-                           .setPViewportState(&viewportStateInfo)
-                           .setPRasterizationState(&rasterizerInfo)
-                           .setPMultisampleState(&multisampleInfo)
-                           .setPDepthStencilState(nullptr)
-                           .setPColorBlendState(&colorBlendInfo)
-                           .setPDynamicState(nullptr)
-                           .setLayout(this->pipeLayout)
-                           .setRenderPass(this->renderPass)
-                           .setSubpass(0)
-                           .setBasePipelineHandle(vk::Pipeline(nullptr))
-                           .setBasePipelineIndex(-1);
-
-   this->pipeline = this->logical->createGraphicsPipeline(vk::PipelineCache(nullptr), pipelineInfo);
 }
 
 void VulkanBackend::createFrameBuffers() {
@@ -483,7 +458,7 @@ void VulkanBackend::createFrameBuffers() {
       vk::ImageView attachments[] = {this->swapViews[i]};
 
       auto frameBuffInfo = vk::FramebufferCreateInfo()
-                               .setRenderPass(this->renderPass)
+                               .setRenderPass(*this->pipe->renderPass)
                                .setAttachmentCount(1)
                                .setPAttachments(attachments)
                                .setWidth(this->swapInfo.res.width)
@@ -519,14 +494,14 @@ void VulkanBackend::createCommandBuffs() {
 
       this->clearColor.setColor(array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
       cmd.beginRenderPass(vk::RenderPassBeginInfo()
-                              .setRenderPass(this->renderPass)
+                              .setRenderPass(*this->pipe->renderPass)
                               .setRenderArea({{0, 0}, this->swapInfo.res})
                               .setFramebuffer(*this->swapFramebuffers[i])
                               .setClearValueCount(1)
                               .setPClearValues(&clearColor),
                           vk::SubpassContents::eInline);
 
-      cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, this->pipeline);
+      cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *this->pipe->pipe);
       cmd.draw(3, 1, 0, 0);
       cmd.endRenderPass();
       cmd.end();

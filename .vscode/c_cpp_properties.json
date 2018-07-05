@@ -1,0 +1,40 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}",
+                "/usr/include/c++/8.1.1",
+                "/usr/include/c++/8.1.1/x86_64-pc-linux-gnu",
+                "/usr/include/c++/8.1.1/backward",
+                "/usr/local/include",
+                "/usr/lib/clang/6.0.0/include",
+                "/usr/include",
+                "${VULKAN_SDK}/include",
+                "${workspaceFolder}/subprojects/glengine/subprojects/enummap"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "/usr/include/c++/8.1.1",
+                    "/usr/include/c++/8.1.1/x86_64-pc-linux-gnu",
+                    "/usr/include/c++/8.1.1/backward",
+                    "/usr/local/include",
+                    "/usr/lib/clang/6.0.0/include",
+                    "/usr/include",
+                    "${VULKAN_SDK}/include",
+                    "${workspaceFolder}/subprojects/glengine/subprojects/enummap"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+        
+    ],
+    "version": 3
+}
