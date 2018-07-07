@@ -1,4 +1,10 @@
 #pragma once
+/*
+ * Basically used for the base types (uint, byte, etc), as well as a staging ground for testing types before splitting
+ * them into their own files.
+ *
+ */
+
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -99,4 +105,78 @@ struct NVector {
 
 
    NVector_Storage<TYPES...> storage;
+};
+
+
+template <typename T>
+inline constexpr auto ToBase(const T& t) {
+   return static_cast<typename std::underlying_type<T>::type>(t);
+}
+
+template <typename T>
+struct BaseFlag {
+   using BaseEnum = T;
+   using BaseType = typename std::underlying_type<T>::type;
+
+   inline BaseFlag(BaseEnum e) : val{e} {}
+   inline BaseFlag(BaseType e) : val{T(e)} {}
+
+   operator BaseEnum() { return val; }
+
+   operator BaseType() { return static_cast<BaseType>(val); }
+
+   T val;
+};
+
+
+/// \brief An exclusive flag
+template <typename T, typename std::underlying_type<T>::type MAXVAL = std::underlying_type<T>::type::MaxEnum>
+struct Flag : BaseFlag<T> {
+   using BaseEnum = T;
+   using BaseType = typename std::underlying_type<T>::type;
+   using ThisFlag = Flag<T>;
+
+   inline Flag(BaseEnum e) : BaseFlag<T>{e} {}
+   inline Flag(BaseType e) : BaseFlag<T>{e} {}
+
+   using BaseFlag<T>::val;
+
+   // An exclusive flag may only move backwards/forwards. No setting other parts.
+   inline ThisFlag operator+(BaseEnum x) { return (ToBase(val) + x) % MAXVAL; }
+   inline ThisFlag operator-(BaseEnum x) { return (ToBase(val) - x + MAXVAL) % MAXVAL; }
+
+   // Increment wraps around. BaseEnum MUST have a MaxEnum declared
+   inline ThisFlag operator++(int) {
+      auto copy = ToBase(val);
+      val       = static_cast<BaseEnum>(++ToBase(val) % ToBase(MAXVAL));
+      return copy;
+   }
+   inline ThisFlag operator++() { return ++ToBase(val) % MAXVAL; }
+   inline ThisFlag operator--(int) {
+      auto copy = ToBase(val);
+      val       = static_cast<BaseEnum>((--ToBase(val) + ToBase(MAXVAL)) % ToBase(MAXVAL));
+      return copy;
+   }
+   inline ThisFlag operator--() { return (--ToBase(val) + ToBase(MAXVAL)) % ToBase(MAXVAL); }
+};
+
+constexpr size_t Bit(const size_t n) { return 1 << n; }
+
+template <typename T>
+struct FlagSet : BaseFlag<T> {
+   using BaseEnum = T;
+   using BaseType = typename std::underlying_type<T>::type;
+   using ThisFlag = Flag<T>;
+
+   using BaseFlag<T>::val;
+   inline FlagSet(BaseEnum e) : BaseFlag<T>{e} {}
+   inline FlagSet(BaseType e) : BaseFlag<T>{e} {}
+
+   inline bool has(const BaseEnum flag) const { return ToBase(val) & ToBase(flag); }
+
+
+   inline ThisFlag operator|(const BaseEnum rhs) const { return ToBase(val) | ToBase(rhs); }
+   inline ThisFlag operator&(const BaseEnum rhs) const { return ToBase(val) & ToBase(rhs); }
+   inline ThisFlag operator~() const { return ~ToBase(val); }
+   inline ThisFlag operator^(const BaseEnum rhs) const { return ToBase(val) ^ ToBase(rhs); }
 };

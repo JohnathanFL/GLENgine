@@ -6,7 +6,6 @@
 
 #include "Macros.hpp"
 
-#include "Pipeline.hpp"
 #include "Shader.hpp"
 
 struct QueueIndices {
