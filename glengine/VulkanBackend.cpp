@@ -379,14 +379,13 @@ void VulkanBackend::createRenderPasses() {
            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
-   this->pipe->renderPass = std::make_shared<RenderPass>(this->logical);
+
+   this->pipe             = std::make_shared<GraphicsPipeline>(*this->logical);
+   this->pipe->renderPass = std::make_shared<RenderPass>(*this->logical);
    this->pipe->renderPass->addPass(subpass).addDep(dep).addAttachment(colorAttachDesc).build();
 }
 
 void VulkanBackend::createGraphicsPipeline() {
-   this->pipe = std::make_shared<GraphicsPipeline>(this->logical);
-
-
    auto vertSrc = LoadFile("vert.spv");
    auto fragSrc = LoadFile("frag.spv");
 
@@ -402,11 +401,13 @@ void VulkanBackend::createGraphicsPipeline() {
        vk::PipelineVertexInputStateCreateInfo().setVertexBindingDescriptionCount(0).setVertexAttributeDescriptionCount(
            0);
 
-   this->pipe.vertInputState = vertPipelineInfo;
+   this->pipe->vertInputState = vertPipelineInfo;
 
-       auto inputAsmInfo = vk::PipelineInputAssemblyStateCreateInfo()
-                               .setTopology(vk::PrimitiveTopology::eTriangleList)
-                               .setPrimitiveRestartEnable(false);
+   auto inputAsmInfo = vk::PipelineInputAssemblyStateCreateInfo()
+                           .setTopology(vk::PrimitiveTopology::eTriangleList)
+                           .setPrimitiveRestartEnable(false);
+
+   this->pipe->setTopology(Topology::Triangles);
 
    auto viewport = vk::Viewport()
                        .setX(0.0f)
@@ -416,39 +417,28 @@ void VulkanBackend::createGraphicsPipeline() {
                        .setMinDepth(0.0f)
                        .setMaxDepth(1.0f);
 
+
    auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent(this->swapInfo.res);
 
-   auto viewportStateInfo = vk::PipelineViewportStateCreateInfo()
-                                .setViewportCount(1)
-                                .setPViewports(&viewport)
-                                .setScissorCount(1)
-                                .setPScissors(&scissor);
+   this->pipe->addViewport(viewport, scissor);
 
-   auto rasterizerInfo = vk::PipelineRasterizationStateCreateInfo()
-                             .setDepthClampEnable(false)
-                             .setRasterizerDiscardEnable(false)
-                             .setPolygonMode(vk::PolygonMode::eFill)
-                             .setLineWidth(1.0f)
-                             .setCullMode(vk::CullModeFlagBits::eBack)
-                             .setFrontFace(vk::FrontFace::eClockwise)
-                             .setDepthBiasEnable(false);
+   this->pipe->setEnableDepthClamp(false)
+       .setFillMode(FillMode::Fill)
+       .setLineWidth(1.0f)
+       .setCullMode(vk::CullModeFlagBits::eBack)
+       .setFrontFaceRule(FrontFaceRule::LeftHand)
+       .withDepthBias(None<DepthBias>());
 
-   auto multisampleInfo = vk::PipelineMultisampleStateCreateInfo()
-                              .setSampleShadingEnable(false)
-                              .setRasterizationSamples(vk::SampleCountFlagBits::e1)
-                              .setMinSampleShading(1.0f)
-                              .setPSampleMask(nullptr);
+   this->pipe->setMSAA(2);
 
    auto colorBlendState = vk::PipelineColorBlendAttachmentState()
                               .setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eB |
                                                  vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eR)
                               .setBlendEnable(false);
 
-   auto colorBlendInfo =
-       vk::PipelineColorBlendStateCreateInfo().setLogicOpEnable(false).setAttachmentCount(1).setPAttachments(
-           &colorBlendState);
+   this->pipe->addColorBlendAttachments(colorBlendState).setColorBlendOp(None<LogicOp>());
 
-   auto pipeLayoutInfo = vk::PipelineLayoutCreateInfo().setSetLayoutCount(0);
+   this->pipe->build();
 }
 
 void VulkanBackend::createFrameBuffers() {

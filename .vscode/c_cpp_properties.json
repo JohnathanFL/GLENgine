@@ -11,9 +11,10 @@
                 "/usr/lib/clang/6.0.0/include",
                 "/usr/include",
                 "${VULKAN_SDK}/include",
-                "${workspaceFolder}/subprojects/glengine/subprojects/enummap"
+                "${workspaceRoot}/deps/enummap"
             ],
             "defines": [],
+            
             "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
@@ -25,7 +26,7 @@
                     "/usr/lib/clang/6.0.0/include",
                     "/usr/include",
                     "${VULKAN_SDK}/include",
-                    "${workspaceFolder}/subprojects/glengine/subprojects/enummap"
+                    "${workspaceRoot}/deps/enummap"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -34,7 +35,6 @@
             "cStandard": "c11",
             "cppStandard": "c++17"
         }
-        
     ],
     "version": 3
 }

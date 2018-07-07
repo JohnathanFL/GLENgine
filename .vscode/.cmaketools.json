@@ -1,0 +1,128 @@
+{
+  "variant": {
+    "label": "RelWithDebInfo",
+    "keywordSettings": {
+      "buildType": "reldeb"
+    },
+    "description": "Perform optimizations AND include debugging information"
+  },
+  "activeEnvironments": [],
+  "codeModel": {
+    "configurations": [
+      {
+        "name": "RelWithDebInfo",
+        "projects": [
+          {
+            "buildDirectory": "/home/oakenbow/Dev/Projects/GLENgine/build",
+            "hasInstallRule": false,
+            "minimumCMakeVersion": "3.7",
+            "name": "GLENgine",
+            "sourceDirectory": "/home/oakenbow/Dev/Projects/GLENgine",
+            "targets": [
+              {
+                "artifacts": [
+                  "/home/oakenbow/Dev/Projects/GLENgine/build/GLENgine_test"
+                ],
+                "buildDirectory": "/home/oakenbow/Dev/Projects/GLENgine/build",
+                "fileGroups": [
+                  {
+                    "compileFlags": "-O2 -g -DNDEBUG   -std=gnu++1z",
+                    "includePath": [
+                      {
+                        "path": "/home/oakenbow/Dev/Projects/GLENgine/glengine"
+                      },
+                      {
+                        "path": "/home/oakenbow/VulkanSDK/current/x86_64/include"
+                      },
+                      {
+                        "path": "/home/oakenbow/Dev/Projects/GLENgine/glengine/../deps/enummap"
+                      },
+                      {
+                        "path": "/home/oakenbow/Dev/Projects/GLENgine/glengine/../deps/entt/src"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "test/main.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "GLENgine_test",
+                "isGeneratorProvided": false,
+                "linkLanguageFlags": "-O2 -g -DNDEBUG",
+                "linkLibraries": "glengine/libGLENgine.a -lvulkan -ldl",
+                "linkerLanguage": "CXX",
+                "name": "GLENgine_test",
+                "sourceDirectory": "/home/oakenbow/Dev/Projects/GLENgine",
+                "type": "EXECUTABLE"
+              },
+              {
+                "artifacts": [
+                  "/home/oakenbow/Dev/Projects/GLENgine/build/glengine/libGLENgine.a"
+                ],
+                "buildDirectory": "/home/oakenbow/Dev/Projects/GLENgine/build/glengine",
+                "fileGroups": [
+                  {
+                    "isGenerated": false,
+                    "sources": [
+                      "Buffer.hpp",
+                      "GLENgine.hpp",
+                      "Geometry.hpp",
+                      "Logger.hpp",
+                      "Macros.hpp",
+                      "Pipeline-inlines.hpp",
+                      "Pipeline.hpp",
+                      "PipelineEnums.hpp",
+                      "Renderer.hpp",
+                      "RenderingBackend.hpp",
+                      "Serializer.hpp",
+                      "Shader.hpp",
+                      "Types.hpp",
+                      "VulkanBackend.hpp",
+                      "VulkanBase.hpp"
+                    ]
+                  },
+                  {
+                    "compileFlags": "-O2 -g -DNDEBUG   -std=gnu++1z",
+                    "includePath": [
+                      {
+                        "path": "/home/oakenbow/VulkanSDK/current/x86_64/include"
+                      },
+                      {
+                        "path": "/home/oakenbow/Dev/Projects/GLENgine/glengine/../deps/enummap"
+                      },
+                      {
+                        "path": "/home/oakenbow/Dev/Projects/GLENgine/glengine/../deps/entt/src"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "Buffer.cpp",
+                      "Geometry.cpp",
+                      "Logger.cpp",
+                      "Pipeline.cpp",
+                      "Renderer.cpp",
+                      "Shader.cpp",
+                      "VulkanBackend.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "libGLENgine.a",
+                "isGeneratorProvided": false,
+                "linkerLanguage": "CXX",
+                "name": "GLENgine",
+                "sourceDirectory": "/home/oakenbow/Dev/Projects/GLENgine/glengine",
+                "type": "STATIC_LIBRARY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "cookie": "0.6771131713905716",
+    "inReplyTo": "codemodel",
+    "type": "reply"
+  }
+}

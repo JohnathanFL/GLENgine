@@ -44,7 +44,7 @@ enum class STRINGIFY FrontFaceRule : VkFlags {
 };
 
 
-enum class STRINGIFY CompareOp {
+enum class STRINGIFY CompareOp : VkFlags {
    Never          = VK_COMPARE_OP_NEVER,
    Less           = VK_COMPARE_OP_LESS,
    Equal          = VK_COMPARE_OP_EQUAL,
@@ -56,7 +56,7 @@ enum class STRINGIFY CompareOp {
 };
 
 
-enum class STRINGIFY StencilOp {
+enum class STRINGIFY StencilOp : VkFlags {
    Keep              = VK_STENCIL_OP_KEEP,
    Zero              = VK_STENCIL_OP_ZERO,
    Replace           = VK_STENCIL_OP_REPLACE,
@@ -67,7 +67,7 @@ enum class STRINGIFY StencilOp {
    DecrementAndWrap  = VK_STENCIL_OP_DECREMENT_AND_WRAP
 };
 
-enum class STRINGIFY LogicOp {
+enum class STRINGIFY LogicOp : VkFlags {
    Clear        = VK_LOGIC_OP_CLEAR,
    And          = VK_LOGIC_OP_AND,
    AndReverse   = VK_LOGIC_OP_AND_REVERSE,
@@ -87,7 +87,7 @@ enum class STRINGIFY LogicOp {
 };
 
 
-enum class BlendFactor {
+enum class BlendFactor : VkFlags {
    Zero                  = VK_BLEND_FACTOR_ZERO,
    One                   = VK_BLEND_FACTOR_ONE,
    SrcColor              = VK_BLEND_FACTOR_SRC_COLOR,
@@ -109,7 +109,7 @@ enum class BlendFactor {
    OneMinusSrc1Alpha     = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA
 };
 
-enum class BlendOp {
+enum class BlendOp : VkFlags {
    Add                 = VK_BLEND_OP_ADD,
    Subtract            = VK_BLEND_OP_SUBTRACT,
    ReverseSubtract     = VK_BLEND_OP_REVERSE_SUBTRACT,

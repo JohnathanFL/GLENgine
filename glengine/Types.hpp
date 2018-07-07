@@ -31,14 +31,17 @@ using SharedPtr = std::shared_ptr<T>;
 template <typename T>
 using UniquePtr = std::unique_ptr<T>;
 
+template <typename T>
+using Optional = std::optional<T>;
+
 // Yes {} and {val} are simple, but they're not quite so readable. Let's go rust style for this.
 template <typename T>
-inline std::optional<T> None() {
+inline Optional<T> None() {
    return {};
 }
 
 template <typename T>
-inline std::optional<T> Some(const T& val) {
+inline Optional<T> Some(const T& val) {
    return {val};
 }
 
@@ -50,7 +53,7 @@ template <typename T, typename... TYPES>
 struct NVector_Storage {
    NVector_Storage(size_t initial) : vec(initial), storage(initial) {}
 
-   size_t size() { return vec.size(); }
+   size_t size() const { return vec.size(); }
    void   push(const T& t, const TYPES&... args) {
       vec.push_back(t);
       storage.push(args...);
@@ -72,7 +75,7 @@ template <typename T>
 struct NVector_Storage<T> {
    NVector_Storage(size_t initial) : vec(initial) {}
 
-   size_t size() { return vec.size(); }
+   size_t size() const { return vec.size(); }
    void   push(const T& t) { vec.push_back(t); }
    T      pop() {
       auto el = vec.at(vec.back());
@@ -92,7 +95,7 @@ struct NVector {
    void                  push(const TYPES&... args) { storage.push(args...); }
    std::tuple<TYPES...>  pop() { return storage.pop(); }
    std::tuple<TYPES*...> data() { return storage.data(); }
-   size_t                size() { return storage.size(); }  // The size of 1 is the same as the size of all
+   size_t                size() const { return storage.size(); }  // The size of 1 is the same as the size of all
 
 
    NVector_Storage<TYPES...> storage;

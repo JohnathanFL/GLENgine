@@ -21,6 +21,7 @@ struct Shader {
       Geometry    = VK_SHADER_STAGE_GEOMETRY_BIT,
       Fragment    = VK_SHADER_STAGE_FRAGMENT_BIT,
       Compute     = VK_SHADER_STAGE_COMPUTE_BIT,
+      // Maybe remove these last 3?
       AllGraphics = VK_SHADER_STAGE_ALL_GRAPHICS,
       All         = VK_SHADER_STAGE_ALL,
       MaxEnum     = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,

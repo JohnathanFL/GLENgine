@@ -30,6 +30,15 @@
    REF_GETTER(TYPE, VARNAME, FUNC_NAME)       \
    REF_SETTER(TYPE, VARNAME, FUNC_NAME)
 
+// Since these are so common in my code, let's cut out the grunt work everyone already understands
+// Note that this can only be used for VAR = VAL stuff. No extra logic. I don't care what kind of ma-hack-ro stuff you
+// come up with. This includes you, john.
+#define CHAINED_SETTER(VARNAME, FUNCNAME, INPUTTYPE) \
+   inline auto& set##FUNCNAME(INPUTTYPE x) {         \
+      VARNAME = static_cast<decltype(VARNAME)>(x);   \
+      return *this;                                  \
+   }
+
 
 #define GENERATE_ENUM_CONV_OPS(ENUMNAME, ENUMMAPPINGS)                                         \
    inline const std::string& to_string(const ENUMNAME& from) { return ENUMMAPPINGS.at(from); } \

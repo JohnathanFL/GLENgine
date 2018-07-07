@@ -148,10 +148,8 @@ struct SubpassDescription {
    }
 };
 
-class RenderPass : VulkanObject {
+struct RenderPass : VulkanObject {
    RenderPass(vk::Device dev) : VulkanObject(dev), pass{nullptr} {}
-
-  public:
    friend class std::shared_ptr<RenderPass>;
 
    inline void build() {
@@ -193,22 +191,25 @@ class RenderPass : VulkanObject {
 
       return pass.get();
    }
-   
+
    std::vector<vk::AttachmentDescription> attachDescs;
    std::vector<SubpassDescription>        subpassDescs;
    std::vector<vk::SubpassDependency>     subpassDeps;
 };
 
 // Todo: ComputePipeline; Better encapsulation
-class GraphicsPipeline : VulkanObject {
-  protected:
+struct GraphicsPipeline : VulkanObject {
    GraphicsPipeline(vk::Device dev) : VulkanObject(dev) {}
-  
-  public:
-   friend class std::shared_ptr<GraphicsPipeline>;  // Since this has so much stuff and should rarely be remade, force
-                                                    // us to use a shared_ptr to access it.
+
 
    vk::UniquePipeline pipe;
+
+   operator vk::Pipeline() {
+      if (!pipe)
+         build();
+
+      return *pipe;
+   }
 
    vk::PipelineCreateFlags                        flags;
    std::vector<vk::PipelineShaderStageCreateInfo> stages;
@@ -221,8 +222,7 @@ class GraphicsPipeline : VulkanObject {
    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;  // see setTopology and setPrimRestart
    vk::PipelineTessellationStateCreateInfo  tessellationState;
 
-   std::vector<vk::Viewport> viewports;
-   std::vector<vk::Rect2D>   viewScissors;
+   NVector<vk::Viewport, vk::Rect2D> viewAndScissors;
 
    vk::PipelineRasterizationStateCreateInfo rasterizationState;
    vk::PipelineMultisampleStateCreateInfo   multisampleState;
@@ -240,34 +240,42 @@ class GraphicsPipeline : VulkanObject {
    SharedPtr<GraphicsPipeline> basePipeline;
    int32_t                     basePipelineIndex;
 
-   // I pity the fool who has to read this, but that's just what the vk pipeline is like.
-   inline GraphicsPipeline& setFlags(vk::PipelineCreateFlags fl);
+   // I pity the fool who has to read this, but that's just what making the vk pipeline is like.
+
+   // Also, see Macros.hpp for the CHAINED_SETTER stuff, although it's exactly what the name implies - it sets the
+   // first arg, using the second as a func name (Macros can't change capitialization). This makes the code FAR cleaner,
+   // trust me. Please.
+   CHAINED_SETTER(flags, Flags, decltype(flags))
    inline GraphicsPipeline& clearStages();
    template <typename... Args>
    inline GraphicsPipeline& addStages(const Args&... shaders);
-   inline GraphicsPipeline& setTopology(const Topology& top);
-   inline GraphicsPipeline& setPrimitiveRestart(bool v);
-   inline GraphicsPipeline& withAttribs(std::vector<vk::VertexInputAttributeDescription>&& attribs);
-   inline GraphicsPipeline& setPatchControlPoints(uint32 p);
+   CHAINED_SETTER(inputAssemblyState.topology, Topology, Topology)
+   CHAINED_SETTER(inputAssemblyState.primitiveRestartEnable, PrimRestartEnable, bool)
+   CHAINED_SETTER(inputAttribDescs, InputAttribs, decltype(inputAttribDescs))
+   CHAINED_SETTER(tessellationState.patchControlPoints, PatchControlPoints,
+                  decltype(tessellationState.patchControlPoints))
    inline GraphicsPipeline& addViewport(vk::Viewport view, vk::Rect2D scissor);
-   inline GraphicsPipeline& enableDepthClamp(bool enable = true);
-   inline GraphicsPipeline& setfillMode(const FillMode& mode);
-   inline GraphicsPipeline& setCullMode(const CullMode& mode);
-   inline GraphicsPipeline& setFrontFaceRule(const FrontFaceRule& rule);
+   CHAINED_SETTER(rasterizationState.depthClampEnable, EnableDepthClamp, bool)
+   CHAINED_SETTER(rasterizationState.polygonMode, FillMode, FillMode)
+   CHAINED_SETTER(rasterizationState.cullMode, CullMode, vk::CullModeFlags)
+   CHAINED_SETTER(rasterizationState.frontFace, FrontFaceRule, FrontFaceRule)
    inline GraphicsPipeline& withDepthBias(std::optional<DepthBias> bias);
-   inline GraphicsPipeline& setLineWidth(float width);
+   CHAINED_SETTER(rasterizationState.lineWidth, LineWidth, float)
    inline GraphicsPipeline& setMSAA(uint32 samples);
    inline GraphicsPipeline& withDepthTest(std::optional<DepthTest> test);
    inline GraphicsPipeline& withStencilTest(std::optional<StencilTest> test);
    inline GraphicsPipeline& withDepthBounds(glm::vec2&& bounds);
-   inline GraphicsPipeline& withColorBlendOp(std::optional<LogicOp> op);
+   CHAINED_SETTER(colorBlendLogicOp, ColorBlendOp, std::optional<LogicOp>)
+
    template <typename... Args>
    inline GraphicsPipeline& addColorBlendAttachments(const Args&... args);
-   inline GraphicsPipeline& setBlendConstants(const glm::vec4& consts);
-   inline GraphicsPipeline& setLayout(SharedPtr<PipelineLayout> layout);
+
+   CHAINED_SETTER(colorBlendConstants, ColorBlendConstants, glm::vec4)
+   CHAINED_SETTER(layout, Layout, SharedPtr<PipelineLayout>)
    inline GraphicsPipeline& setRenderPass(SharedPtr<RenderPass> pass, uint32 subpass);
-   inline GraphicsPipeline& setBasePipeline(SharedPtr<GraphicsPipeline> base);
-   inline GraphicsPipeline& setBasePipelineIndex(uint32 i);
+   CHAINED_SETTER(basePipeline, BasePipeline, decltype(basePipeline))
+   CHAINED_SETTER(basePipelineIndex, BasePipelineIndex, decltype(basePipelineIndex))
+
 
    inline GraphicsPipeline& build() {
       auto info = vk::GraphicsPipelineCreateInfo()
@@ -279,11 +287,15 @@ class GraphicsPipeline : VulkanObject {
                       .setPTessellationState(&tessellationState);
 
 
+      // Todo: This data func needs to be MUCH more user friendly
+      const auto viewAndScissorsData = viewAndScissors.data();
+
+
       auto viewState = vk::PipelineViewportStateCreateInfo()
-                           .setViewportCount(viewports.size())
-                           .setPViewports(viewports.data())
-                           .setScissorCount(viewScissors.size())
-                           .setPScissors(viewScissors.data());
+                           .setViewportCount(viewAndScissors.size())
+                           .setPViewports(std::get<0>(viewAndScissorsData))
+                           .setScissorCount(viewAndScissors.size())
+                           .setPScissors(std::get<1>(viewAndScissorsData));
 
       info.setPViewportState(&viewState);
 
@@ -318,13 +330,6 @@ class GraphicsPipeline : VulkanObject {
 
    // TODO: sample shading params
 
-   operator vk::Pipeline() {
-       if(!pipe)
-       build();
-
-       return *pipe;
-   }
-
 
    // TODO: Probably load from a TOML file, using cpptoml
    // static GraphicsPipeline FromSrc(const TODO& src);
@@ -332,61 +337,17 @@ class GraphicsPipeline : VulkanObject {
 
 
 #pragma region GraphicsPipelineInlines
-GraphicsPipeline& GraphicsPipeline::setFlags(vk::PipelineCreateFlags fl) {
-   flags = fl;
-   return *this;
-}
 
 GraphicsPipeline& GraphicsPipeline::clearStages() {
    stages.clear();
    return *this;
 }
 
-GraphicsPipeline& GraphicsPipeline::setTopology(const Topology& top) {
-   inputAssemblyState.topology = vk::PrimitiveTopology(top);
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setPrimitiveRestart(bool v) {
-   inputAssemblyState.primitiveRestartEnable = v;
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::withAttribs(std::vector<vk::VertexInputAttributeDescription>&& attribs) {
-   inputAttribDescs = attribs;
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setPatchControlPoints(uint32 p) {
-   tessellationState.patchControlPoints = p;
-   return *this;
-}
-
 GraphicsPipeline& GraphicsPipeline::addViewport(vk::Viewport view, vk::Rect2D scissor) {
-   viewports.push_back(view);
-   viewScissors.push_back(scissor);
+   viewAndScissors.push(view, scissor);
    return *this;
 }
 
-GraphicsPipeline& GraphicsPipeline::enableDepthClamp(bool enable) {
-   rasterizationState.depthClampEnable = enable;
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setfillMode(const FillMode& mode) {
-   rasterizationState.polygonMode = vk::PolygonMode(mode);
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setCullMode(const CullMode& mode) {
-   rasterizationState.cullMode = vk::CullModeFlagBits(mode);
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setFrontFaceRule(const FrontFaceRule& rule) {
-   rasterizationState.frontFace = vk::FrontFace(rule);
-   return *this;
-}
 
 GraphicsPipeline& GraphicsPipeline::withDepthBias(std::optional<DepthBias> bias) {
    if (bias.has_value())
@@ -397,11 +358,6 @@ GraphicsPipeline& GraphicsPipeline::withDepthBias(std::optional<DepthBias> bias)
    else
       rasterizationState.setDepthBiasEnable(false);
 
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setLineWidth(float width) {
-   rasterizationState.lineWidth = width;
    return *this;
 }
 
@@ -437,38 +393,15 @@ GraphicsPipeline& GraphicsPipeline::withDepthBounds(glm::vec2&& bounds) {  // us
    return *this;
 }
 
-GraphicsPipeline& GraphicsPipeline::withColorBlendOp(std::optional<LogicOp> op) {
-   colorBlendLogicOp = op;
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setBlendConstants(const glm::vec4& consts) {
-   colorBlendConstants = consts;
-   return *this;
-}
-
-GraphicsPipeline& GraphicsPipeline::setLayout(SharedPtr<PipelineLayout> layout) {
-   this->layout = layout;
-   return *this;
-}
-
 GraphicsPipeline& GraphicsPipeline::setRenderPass(SharedPtr<RenderPass> pass, uint32 subpass) {
    renderPass   = pass;
    subpassIndex = subpass;
    return *this;
 }
 
-GraphicsPipeline& GraphicsPipeline::setBasePipeline(SharedPtr<GraphicsPipeline> base) {
-   basePipeline = base;
-   return *this;
-}
 
-GraphicsPipeline& GraphicsPipeline::setBasePipelineIndex(uint32 i) {
-   basePipelineIndex = i;
-   return *this;
-}
 template <typename... Args>
-inline GraphicsPipeline& GraphicsPipeline::withStages(const Args&... shaders) {
+inline GraphicsPipeline& GraphicsPipeline::addStages(const Args&... shaders) {
    for (const Shader& shader : {shaders...})
       stages.push_back(shader.toPipelineCreateInfo());
 
