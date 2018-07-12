@@ -7,8 +7,7 @@
 // renderer's pools, to maintain better locality. We won't use pointers in the wrappers since we can't be sure that
 // vectors won't be resized/moved.
 
-namespace glenimpl {
-struct Shader : VulkanObject {
+struct VulkanShader : VulkanObject {
    vk::ShaderModule shaderMod;
    // For now, the entry must be main.
    // TODO: Shader specialization
@@ -29,11 +28,11 @@ struct Shader : VulkanObject {
    // Todo: I had this sorta thing in the OpenGL backend, maybe reintroduce it?
    // enum class Type { Vertex, Fragment, Compute, Geometry } type;
 
-   static Shader FromSrc(const std::vector<byte>& src, Stage stage, vk::Device dev) {
+   static VulkanShader FromSrc(const std::vector<byte>& src, Stage stage, vk::Device dev) {
       auto createInfo =
           vk::ShaderModuleCreateInfo().setCodeSize(src.size()).setPCode(reinterpret_cast<const uint32*>(src.data()));
 
-      return Shader{dev, dev.createShaderModule(createInfo), stage};
+      return VulkanShader{dev, dev.createShaderModule(createInfo), stage};
    }
 
    vk::PipelineShaderStageCreateInfo toPipelineCreateInfo() const {
@@ -47,4 +46,3 @@ struct Shader : VulkanObject {
    // Since this is basically a thin wrapper, I figure this is appropriate.
    CONVERTABLE_TO_MEMBER(shaderMod)
 };
-}  // namespace glenimpl

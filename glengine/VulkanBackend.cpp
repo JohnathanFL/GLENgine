@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+#include "VulkanBackend.hpp"
 
 #include <set>
 
@@ -21,6 +21,7 @@ VulkanBackend::~VulkanBackend() {
 }
 
 void VulkanBackend::init(const string& windowTitle, glm::ivec2 windowDims) {
+   SDL_Init(SDL_INIT_EVERYTHING);
    this->windowDims = windowDims;
    window =
        SDL_CreateWindow(windowTitle.c_str(), 0, 0, windowDims.x, windowDims.y, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN);

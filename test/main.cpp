@@ -7,6 +7,7 @@
 
 #include "GLENgine.hpp"
 
+
 using namespace std;
 
 
@@ -18,9 +19,12 @@ struct Vert {
 
 int main() {
    try {
+      bool running = true;
       Logger::SetLogFile("mcpp.log");
-      Renderer renderer{"mcpp", {1600, 900}};
+      RenderingBackend* renderer = new VulkanBackend();
+      renderer->init("mcpp", {1600, 900});
 
+      Input input{renderer->window};
 
       std::vector<Vert>     verts    = {{{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
                                  {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
@@ -28,13 +32,9 @@ int main() {
       std::vector<unsigned> indicies = {0, 1, 2};
 
 
-      bool running = true;
-      while (running) {
-         renderer.updateRender();
-         SDL_Event event;
-         while (SDL_PollEvent(&event))
-            if (event.type == SDL_QUIT)
-               running = false;
+      while (!input.shouldQuit()) {
+         renderer->updateRender();
+         input.update();
       }
    } catch (const std::runtime_error& e) {
       Logger::Error("UNCAUGHT EXCEPTION: ", e.what());

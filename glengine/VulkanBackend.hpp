@@ -1,6 +1,7 @@
 #pragma once
+#include <vulkan/vulkan.hpp>
 
-#include <SDL2/SDL_vulkan.h>
+#include <SDL2/SDL.h>
 
 #include "RenderingBackend.hpp"
 
@@ -26,7 +27,7 @@ struct SwapchainInfo {
    vk::Extent2D         res;
 };
 
-class VulkanBackend : RenderingBackend {
+class VulkanBackend : public RenderingBackend {
   public:
    virtual ~VulkanBackend();
 
@@ -49,6 +50,44 @@ class VulkanBackend : RenderingBackend {
 
    void getExtensions();
    void getLayers();
+
+   virtual void updateRender() {
+      // Todo: All of this should be re-encapsulated into a vulkan backend object.
+      uint32 imageIndex = logical
+                              ->acquireNextImageKHR(swapchain, std::numeric_limits<uint32>::max(),
+                                                    *imageAvailSems[currentFrame], vk::Fence(nullptr))
+                              .value;
+      vk::Semaphore          waitSemaphores[] = {*imageAvailSems[currentFrame]};
+      vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+
+      vk::Semaphore signalSemaphores[] = {*renderFinishedSems[currentFrame]};
+
+
+      auto subInfo = vk::SubmitInfo()
+                         .setWaitSemaphoreCount(1)
+                         .setPWaitSemaphores(waitSemaphores)
+                         .setPWaitDstStageMask(waitStages)
+                         .setCommandBufferCount(1)
+                         .setPCommandBuffers(&cmdBuffs[imageIndex])
+                         .setSignalSemaphoreCount(1)
+                         .setPSignalSemaphores(signalSemaphores);
+
+      graphicsQueue.submit(subInfo, vk::Fence(nullptr));
+
+
+      vk::SwapchainKHR swapchains[] = {swapchain};
+
+      auto presentInfo = vk::PresentInfoKHR()
+                             .setWaitSemaphoreCount(1)
+                             .setPWaitSemaphores(signalSemaphores)
+                             .setSwapchainCount(1)
+                             .setPSwapchains(swapchains)
+                             .setPImageIndices(&imageIndex)
+                             .setPResults(nullptr);
+      presentQueue.presentKHR(presentInfo);
+
+      currentFrame = (currentFrame + 1) % maxFramesInFlight;
+   }
 
    // Perhaps exchange the references with a single (const) reference to a VulkanBoilerplate?
    static QueueIndices         getQueueFamilyIndices(const vk::PhysicalDevice& physical, const vk::SurfaceKHR& surface);
@@ -83,7 +122,6 @@ class VulkanBackend : RenderingBackend {
    std::vector<vk::Image>     swapImages;
    std::vector<vk::ImageView> swapViews;
 
-   std::shared_ptr<GraphicsPipeline> pipe;
 
    std::vector<vk::UniqueFramebuffer> swapFramebuffers;
 
@@ -96,5 +134,5 @@ class VulkanBackend : RenderingBackend {
    std::vector<vk::UniqueSemaphore> imageAvailSems, renderFinishedSems;
 
    // Temp stuff for following the vulkan-tutorial
-   Shader vert, frag;
+   VulkanShader vert, frag;
 };

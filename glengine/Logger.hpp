@@ -26,6 +26,10 @@ class Logger {
 
    // Shorthand write functions
 
+   template <typename... Args>
+   static void Debug(const Args&... args) {
+      Write("DEBUG", args...);
+   }
 
    template <typename... Args>
    static void Error(const Args&... args) {

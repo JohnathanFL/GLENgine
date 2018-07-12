@@ -23,6 +23,7 @@ class RenderingBackend {
 
 
    virtual void init(const std::string& windowTitle, glm::ivec2 windowDims) = 0;
+   virtual void updateRender()                                              = 0;
    SDL_Window*  window;
    glm::ivec2   windowDims;
 };

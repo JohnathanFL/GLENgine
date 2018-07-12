@@ -8,7 +8,10 @@
 
 #include <SDL2/SDL.h>
 
-#include "Renderer.hpp"
+#include "RenderingBackend.hpp"
+#include "VulkanBackend.hpp"
+
+#include "Input.hpp"
 
 #include "Logger.hpp"
 
