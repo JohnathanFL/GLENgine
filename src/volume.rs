@@ -11,6 +11,8 @@ use math::*;
 
 use num_traits::PrimInt;
 
+use specs::world::{Bundle, World};
+
 #[derive(Debug, Copy, Clone)]
 pub enum DrawStyle {
     ChunkByChunk,
@@ -76,5 +78,27 @@ impl Volume {
 
     pub fn chunks(&self) -> impl Iterator<Item = &Chunk> {
         return self.chunks.values();
+    }
+
+    pub fn add_chunk(&mut self, coords: PackedChunkCoords) {
+        if !self.chunks.contains_key(&coords) {
+            self.chunks.insert(coords, Chunk::new());
+        }
+    }
+
+    pub fn chunk(&self, coords: PackedChunkCoords) -> Option<&Chunk> {
+        return self.chunks.get(&coords);
+    }
+
+    pub fn chunk_mut(&mut self, coords: PackedChunkCoords) -> Option<&mut Chunk> {
+        return self.chunks.get_mut(&coords);
+    }
+}
+
+pub struct VolumeBundle;
+
+impl Bundle for VolumeBundle {
+    fn add_to_world(self, world: &mut World) {
+        world.register::<Volume>();
     }
 }

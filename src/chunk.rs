@@ -1,25 +1,9 @@
-use render::VoxelVert;
+use mesh::{VoxelMesh, VertVoxel, VertPos};
 use math::*;
 
 
 const CHUNK_SIZE: usize = 32;
-macro_rules! check_coord {
-                ($coords: ident, $dim: ident) => {
-                    if ($coords.$dim as usize) >= CHUNK_SIZE {
-                        println!("ERROR: coords.{} WAS OUT OF BOUNDS! ({})", stringify!($dim),
-                        $coords.$dim);
-                        $coords.$dim = (CHUNK_SIZE - 1) as _;
-                    }
-                };
-                ($coords:ident, $($dim: ident),*) => {
-                    let mut coords = $coords;
-                    $(
-                        check_coord!(coords, $dim);
-                    )*
 
-                    coords
-                };
-}
 
 
 pub type Voxel = u32;
@@ -28,7 +12,7 @@ pub const AIR_VOXEL: Voxel = 0;
 
 pub type ChunkArray<T> = [[[T; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE];
 
-pub type MesherFunc = Fn(&Chunk, Option<Vec<VoxelVert>>) -> Vec<VoxelVert>;
+pub type MesherFunc = Fn(&Chunk, Option<VoxelMesh>) -> VoxelMesh;
 
 /// To be used with frequently changing data.
 #[derive(Debug, Clone)]
@@ -38,13 +22,13 @@ pub struct Chunk {
 
     isDirty: bool,
     blocks: ChunkArray<Voxel>,
-    mesh: Vec<VoxelVert>,
+    mesh: VoxelMesh
     // TODO: The blocks should be in CPU accessible and the mesh should be DeviceLocal for
     // compute shaders to work better.
 }
 
 
-pub fn data_mesher(chunk: &Chunk, oldMesh: Option<Vec<VoxelVert>>) -> Vec<VoxelVert> {
+pub fn data_mesher(chunk: &Chunk, oldMesh: Option<VoxelMesh>) -> VoxelMesh {
     /*
 
     1256 -> +Z
@@ -75,7 +59,7 @@ pub fn data_mesher(chunk: &Chunk, oldMesh: Option<Vec<VoxelVert>>) -> Vec<VoxelV
         vec3(DIST_TO_WALL, -DIST_TO_WALL, -DIST_TO_WALL),  // 6
         vec3(-DIST_TO_WALL, -DIST_TO_WALL, -DIST_TO_WALL), // 7
     ];
-    let mut res: Vec<VoxelVert> = oldMesh.unwrap_or(Vec::new());
+    let mut res = oldMesh.unwrap_or(VoxelMesh::new());
 
     /// 1 block is 1/32 of the chunk. Dist from center of block to wall of block is thus
     /// (1/32)/2 = (1/64)
@@ -95,18 +79,15 @@ pub fn data_mesher(chunk: &Chunk, oldMesh: Option<Vec<VoxelVert>>) -> Vec<VoxelV
                 /// Simple code-dupe reduction. Takes midOfBlock and res implicitly, as well as a
                 /// list of 1+ indices (taking from the cube art above) to add
                 macro_rules! vox_vertex {
-                        ($index: expr) => (
-                            res.push(VoxelVert {
-                                pos: midOfBlock + VERTS[$index],
-                                data: voxel,
-                            });
-                        );
+                        ($index: expr) => {
+                            res.push(((midOfBlock + VERTS[$index]).into(), voxel.into()));
+                        };
 
                         ($($index: expr),*) => {
                             $(
                                 vox_vertex!($index);
                             )*
-                        }
+                        };
                     }
 
                 // Note: Each of the following invocations of vox_vertex is doing 1 full
@@ -152,7 +133,7 @@ impl Chunk {
             numUsed: 0,
             isDirty: false, // No blocks == No possible mesh
             blocks: [[[0; 32]; 32]; 32],
-            mesh: Vec::new(),
+            mesh: VoxelMesh::new(),
         };
     }
 
@@ -161,22 +142,17 @@ impl Chunk {
             numUsed: 0,
             isDirty: false,
             blocks: [[[backgroundData; 32]; 32]; 32],
-            mesh: Vec::new(),
+            mesh: VoxelMesh::new(),
         };
     }
 
     #[inline]
     pub fn get(&self, coords: UVec3) -> Voxel {
-        let coords = if cfg!(feature = "no_checks") { coords } else { check_coord!(coords, x,y,z) };
-
         return self.blocks[coords[0] as usize][coords[1] as usize][coords[2] as usize];
     }
 
     #[inline]
     pub fn set(&mut self, coords: UVec3, newVal: Voxel) {
-        let coords = if cfg!(feature = "no_checks") { coords } else { check_coord!(coords, x,y,z) };
-
-
         self.blocks[coords[0] as usize][coords[1] as usize][coords[2] as usize] = newVal;
     }
 

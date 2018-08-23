@@ -1,0 +1,12 @@
+[package]
+name = "glengine-derive"
+version = "0.1.0"
+authors = ["Johnathan Lee <jfl747076@gmail.com>"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "0.14.8"
+quote = "0.6.6"
+proc-macro2 = "0.4.4"
