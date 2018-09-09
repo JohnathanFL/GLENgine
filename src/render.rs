@@ -38,6 +38,7 @@ use smallvec::SmallVec;
 
 // OTHER MODULES
 use scene::transform::*;
+use scene::DeltaTime;
 use math::*;
 use volume::*;
 use mesh::*;
@@ -69,7 +70,7 @@ pub struct Renderer {
     renderpass: Arc<RenderPassAbstract + Send + Sync>,
     defaultPipeline: Arc<GraphicsPipelineAbstract + Send + Sync>,
 
-    framebuffers: Option<Arc<FramebufferAbstract + Send + Sync>>,
+    framebuffers: Option<Vec<Arc<FramebufferAbstract + Send + Sync>>>,
     prevFrame: Box<GpuFuture + Send + Sync>,
 
     dirtySwapchain: bool,
@@ -233,8 +234,8 @@ impl Renderer {
             scissors: None,
         };
 
-        let depthBuffer= vk::image::AttachmentImage::transient(logical.clone(), windowDims.into(),
-                                                               vk::format::D16Unorm)
+        let depthBuffer = vk::image::AttachmentImage::transient(logical.clone(), windowDims.into(),
+                                                                vk::format::D16Unorm)
             .expect("Failed to create depthBuffer!");
 
         return (evLoop, Renderer {
@@ -251,7 +252,7 @@ impl Renderer {
             prevFrame,
             dirtySwapchain: true,
             dynState,
-            depthBuffer
+            depthBuffer,
         },
         );
     }
@@ -267,12 +268,16 @@ impl Renderer {
 
 impl<'a> System<'a> for Renderer {
     type SystemData = (
+        Read<'a, DeltaTime>,
         Entities<'a>,
         ReadStorage<'a, components::Camera>,
-        ReadStorage<'a, Volume>);
+        ReadStorage<'a, Volume>
+    );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (ents, cameras, volumes) = data;
+        let (delta, ents, cameras, volumes) = data;
+
+
 
 
         self.prevFrame.cleanup_finished();
@@ -309,7 +314,7 @@ impl<'a> System<'a> for Renderer {
                 Viewport {
                     origin: [0.0, 0.0],
                     dimensions: [self.windowDims.x as _, self.windowDims.y as _],
-                    depth_range: 0.0 .. 1.0
+                    depth_range: 0.0..1.0,
                 }
             ]);
 
@@ -317,16 +322,35 @@ impl<'a> System<'a> for Renderer {
         }
 
         if self.framebuffers.is_none() {
-            self.framebuffers = Some(self.swapImages.iter().map(|image| {
-                Arc::new(Framebuffer::start(self.renderpass.clone())
-                    .add(image.clone()).unwrap()
-                    .add(self.depthBuffer.clone()).unwrap()
-                    .build().unwrap()
-                )
-            }).collect());
+            let newBuffers = self.swapImages.iter()
+                .map(|image| {
+                    let res: Arc<FramebufferAbstract + Send + Sync> = Arc::new(Framebuffer::start(self
+                        .renderpass.clone())
+                        .add(image.clone()).unwrap()
+                        .add(self.depthBuffer.clone()).unwrap()
+                        .build().unwrap()
+                    );
+                    res
+                }).collect();
+            self.framebuffers = Some(newBuffers);
         }
 
-re
+        for cam in cameras.iter() {
+            let persp = cam.persp;
+
+            let uniBuffSubBuff = {
+                let elapsed = delta.into();
+                let uniData = dp::defaultvs::ty::PerFrameInfo {
+                    timeStep: elapsed,
+                    persp,
+                    pos: Mat4x4::identity()
+                };
+
+                
+            };
+        }
+
+
     }
 }
 
@@ -339,6 +363,10 @@ pub struct PipelineID(usize);
 
 #[derive(Debug, Copy, Clone, NewType)]
 pub struct TextureID(usize);
+
+pub trait MeshData {
+
+}
 
 pub mod components {
     use super::*;
@@ -358,6 +386,10 @@ pub mod components {
             };
         }
     }
+
+    #[derive(Debug, Clone, Component, NewType)]
+    #[storage(DenseVecStorage)]
+    pub struct Mesh(Arc<MeshData + Send + Sync>);
 }
 
 

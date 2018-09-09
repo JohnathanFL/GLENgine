@@ -3,6 +3,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #![feature(custom_attribute)]
+#![allow(unused_parens)]
 
 #![feature(drain_filter)]
 #![feature(const_str_as_ptr)]
@@ -76,10 +77,24 @@ use scene::{NodeBuilder, hierarchy::{Node, RootNode}, transform::Transformation}
 
 mod mesh;
 mod render;
+use render::{self, Renderer};
 mod components;
 mod defaultpipeline;
 
-use render::Renderer;
+
+fn main() {
+    let mut app = App::new();
+
+    'main: loop {
+        let status = app.update();
+        match status {
+            AppStatus::Continue => continue,
+            AppStatus::Exit => break 'main,
+            AppStatus::Error(code) => exit(code)
+        }
+    }
+}
+
 
 struct Keybindings {
     quit: usize,
@@ -91,6 +106,7 @@ struct App<'a> {
     pub events: EventsLoop,
     pub world: World,
     pub dispatcher: Dispatcher<'a, 'a>,
+    pub rootNode: specs::Entity
 }
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
@@ -194,15 +210,3 @@ impl<'a> App<'a> {
 }
 
 
-fn main() {
-    let mut app = App::new();
-
-    'main: loop {
-        let status = app.update();
-        match status {
-            AppStatus::Continue => continue,
-            AppStatus::Exit => break 'main,
-            AppStatus::Error(code) => exit(code)
-        }
-    }
-}

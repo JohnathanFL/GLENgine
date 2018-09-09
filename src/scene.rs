@@ -15,7 +15,7 @@ use smallvec::SmallVec;
 
 use math::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, NewType)]
 pub struct DeltaTime(f64);
 
 
@@ -54,8 +54,9 @@ pub mod transform {
     impl From<Transformation> for Mat4x4 {
         #[inline]
         fn from(transform: Transformation) -> Mat4x4 {
-            return Mat4x4::from_translation(transform.pos) * Mat4x4::from(transform.rot) *
-                Mat4x4::from_scale(1.0);
+            let rotMat: Mat4x4 = transform.rot.into();
+
+            return Mat4x4::from_translation(transform.pos) * rotMat * Mat4x4::from_scale(1.0);
         }
     }
 

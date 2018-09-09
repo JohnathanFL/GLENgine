@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 extern crate proc_macro;
 
 
@@ -6,13 +8,11 @@ extern crate proc_macro2;
 use proc_macro2::Span;
 
 extern crate syn;
-use syn::{Data, DeriveInput, Fields, DataStruct, FieldsUnnamed, Ident};
+use syn::{DeriveInput, Ident};
 
 
 #[macro_use]
 extern crate quote;
-
-use quote::{TokenStreamExt, ToTokens};
 
 use proc_macro::TokenStream;
 

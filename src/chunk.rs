@@ -61,8 +61,8 @@ pub fn data_mesher(chunk: &Chunk, oldMesh: Option<VoxelMesh>) -> VoxelMesh {
     ];
     let mut res = oldMesh.unwrap_or(VoxelMesh::new());
 
-    /// 1 block is 1/32 of the chunk. Dist from center of block to wall of block is thus
-    /// (1/32)/2 = (1/64)
+    // 1 block is 1/32 of the chunk. Dist from center of block to wall of block is thus
+    // (1/32)/2 = (1/64)
 
 
     for z in 0..CHUNK_SIZE {
