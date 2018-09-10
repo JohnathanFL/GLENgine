@@ -4,9 +4,9 @@ version = "0.1.0"
 dependencies = [
  "bidrag 0.1.0",
  "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "glengine-derive 0.1.0",
  "gltf 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "newtype 0.1.0",
  "num-traits 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -61,6 +61,9 @@ dependencies = [
 [[package]]
 name = "bidrag"
 version = "0.1.0"
+dependencies = [
+ "newtype 0.1.0",
+]
 
 [[package]]
 name = "bitflags"
@@ -323,15 +326,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glengine-derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.14.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "glsl-to-spirv"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -516,6 +510,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "mopa"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "newtype"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.14.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "nix"

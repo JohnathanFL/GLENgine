@@ -95,10 +95,7 @@ impl Volume {
     }
 }
 
-pub struct VolumeBundle;
 
-impl Bundle for VolumeBundle {
-    fn add_to_world(self, world: &mut World) {
-        world.register::<Volume>();
-    }
-}
+
+
+make_bundle!{VolumeBundle, |x|{}, Volume}

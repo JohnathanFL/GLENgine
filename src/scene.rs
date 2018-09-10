@@ -18,6 +18,12 @@ use math::*;
 #[derive(Debug, Copy, Clone, NewType)]
 pub struct DeltaTime(f64);
 
+impl Default for DeltaTime {
+    fn default() -> DeltaTime {
+        DeltaTime(0.0)
+    }
+}
+
 
 /// All components are working in a LOCAL space.
 /// The Root transform

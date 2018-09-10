@@ -20,14 +20,12 @@ pub struct VertPos {
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
-pub struct VertVoxel {
+pub struct VertData {
     pub data: Voxel,
 }
 
 impl_vertex!(VertPos, pos);
 impl_vertex!(VertVoxel, data);
-
-
 
 impl From<Voxel> for VertVoxel {
     #[inline]

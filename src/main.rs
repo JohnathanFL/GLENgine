@@ -10,7 +10,7 @@
 
 #[macro_use]
 #[macro_reexport]
-extern crate glengine_derive;
+extern crate newtype;
 
 extern crate smallvec;
 
@@ -45,8 +45,7 @@ extern crate specs_derive;
 
 
 extern crate bidrag;
-
-use bidrag::{Key, MouseButton, MouseAxis, Binding};
+use bidrag::{Control, InputSubsystem};
 
 use std::any::{Any, TypeId};
 use std::rc::Rc;
@@ -65,6 +64,11 @@ static ENGINE_NAME: &str = "GLENgine-rs";
 
 mod vulkano_win;
 
+
+#[macro_use]
+mod macros;
+
+
 mod math;
 
 use math::*;
@@ -77,7 +81,7 @@ use scene::{NodeBuilder, hierarchy::{Node, RootNode}, transform::Transformation}
 
 mod mesh;
 mod render;
-use render::{self, Renderer};
+use render::{Renderer};
 mod components;
 mod defaultpipeline;
 
