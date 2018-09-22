@@ -337,11 +337,11 @@ impl<'a> System<'a> for Renderer {
             let persp = cam.persp;
 
             let uniBuffSubBuff = {
-                let elapsed = delta.into();
+                let elapsed = (*delta).into() as f32;
                 let uniData = dp::defaultvs::ty::PerFrameInfo {
                     timeStep: elapsed,
                     persp,
-                    pos: Mat4x4::identity(),
+                    camPos: Mat4x4::identity(),
                 };
             };
         }
